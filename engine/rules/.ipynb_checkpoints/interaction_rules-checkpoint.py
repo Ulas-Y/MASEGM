@@ -3,10 +3,10 @@ from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
 
+
 class InteractionRule:
     def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
         raise NotImplementedError
-
 
 class ManaCondensesToMatter(InteractionRule):
     """
@@ -40,3 +40,36 @@ class ManaCondensesToMatter(InteractionRule):
 
         mana.grid -= delta
         matter.grid += delta
+
+class EnergyCoupledBGrowth(InteractionRule):
+    """
+    Extra B-style mana growth driven by local energy.
+
+    - Normalizes energy to [0, 1] across the grid.
+    - Multiplies mana by exp(alpha * E_norm * dt).
+
+    So hot zones (high energy) multiplicatively amplify mana,
+    cold zones barely grow.
+    """
+
+    def __init__(self, alpha: float = 1.0):
+        self.alpha = alpha
+
+    def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
+        E = energy.grid
+        M = mana.grid
+
+        # shift to non-negative, normalize
+        E_shift = E - E.min()
+        maxE = E_shift.max()
+        if maxE <= 0.0:
+            return
+
+        E_norm = E_shift / maxE  # 0..1
+        factor = np.exp(self.alpha * E_norm * dt)
+        M *= factor
+        mana.ensure_positive()
+
+
+
+

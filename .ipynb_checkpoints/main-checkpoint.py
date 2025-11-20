@@ -1,7 +1,7 @@
 import numpy as np
 
 from engine.rules.mana_rules import ConstantManaSource, BScaleManaGrowth
-from engine.rules.interaction_rules import ManaCondensesToMatter
+from engine.rules.interaction_rules import ManaCondensesToMatter, EnergyCoupledBGrowth
 from engine.rules.phase_rules import PhaseTransitionRule
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
@@ -34,7 +34,6 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     condense = ManaCondensesToMatter(base_rate=0.01, entropy_sensitivity=2.0)
     world.interaction_rules.append(condense)
 
-    # NEW: purity/phase behaviour rule
     phase_rule = PhaseTransitionRule(
         high_purity_cutoff=0.9,
         purinium_cutoff=0.999,
@@ -44,27 +43,33 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     )
     world.interaction_rules.append(phase_rule)
 
+    # NEW: energy-coupled B-growth
+    energy_growth = EnergyCoupledBGrowth(alpha=1.5)  # play with alpha
+    world.interaction_rules.append(energy_growth)
+
+
     
     base_diffusion = 0.5
-    alpha = 1.0  # how strongly low entropy boosts diffusion
+    alpha = 1.0
+    energy_diffusion = 0.3  # can tweak
 
     total_history = []
     entropy_history = []
 
     for step in range(cfg.steps):
-        # compute global entropy BEFORE this step’s diffusion
         S = mana_entropy(world.mana.grid)
         entropy_history.append(S)
 
         frac = S / S_max
         diffusion_rate = base_diffusion * (1.0 + alpha * (1.0 - frac))
 
-        condense.set_entropy(S, S_max)   # <-- pass entropy into the rule
+        condense.set_entropy(S, S_max)
 
         world.step(cfg.dt)
-        world.mana.b_diffuse(diffusion_rate, cfg.dt)  # <-- NEW
-
+        world.mana.b_diffuse(diffusion_rate, cfg.dt)
+        world.energy.b_diffuse(energy_diffusion, cfg.dt)   # NEW
         total_history.append(world.mana.total_mana())
+
 
     total = total_history[-1]
     S_final = entropy_history[-1]
