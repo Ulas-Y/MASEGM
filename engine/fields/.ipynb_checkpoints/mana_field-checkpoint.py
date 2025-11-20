@@ -16,7 +16,12 @@ class ManaField:
     
     def __init__(self, shape=(100, 100), initial_value: float = 0.0):
         self.shape = shape
-        self.grid = np.full(shape, initial_value, dtype=float)
+        base = max(initial_value, 0.0)
+        self.grid = np.full(shape, base, dtype=float) + 1e-12
+    
+        # NEW: phase index per cell (will be managed by phase rules)
+        # 0: particles, 1: energy, 2: gas, 3: refined, 4: aether, 5: purinium
+        self.phase = np.zeros(shape, dtype=np.uint8)   
     
     def add_mana(self, y: int, x: int, amount: float) -> None:
         self.grid[y, x] += amount
