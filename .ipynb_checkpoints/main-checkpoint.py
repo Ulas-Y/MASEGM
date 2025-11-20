@@ -1,12 +1,13 @@
 import numpy as np
+
+from engine.rules.mana_rules import ConstantManaSource, BScaleManaGrowth
 from engine.rules.interaction_rules import ManaCondensesToMatter
+from engine.rules.phase_rules import PhaseTransitionRule
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
-from engine.rules.mana_rules import ConstantManaSource, BScaleManaGrowth
-from engine.world import World
 from engine.utils import EngineConfig, plot_scalar_field, mana_entropy, detect_ness
-
+from engine.world import World
 
 
 def main(growth_k: float = 0.5, steps: int | None = None):
@@ -24,16 +25,25 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     
     world = World(mana=mana, matter=matter, energy=energy)
     
-    condense = ManaCondensesToMatter(base_rate=0.01, entropy_sensitivity=2.0)
-    world.interaction_rules.append(condense)
-    
-    
     source = ConstantManaSource(cfg.ny // 2, cfg.nx // 2, rate=1.0)
     world.mana_rules.append(source)
-    
-    # use the parameter from the caller:
+
     b_growth = BScaleManaGrowth(k=growth_k)
     world.mana_rules.append(b_growth)
+
+    condense = ManaCondensesToMatter(base_rate=0.01, entropy_sensitivity=2.0)
+    world.interaction_rules.append(condense)
+
+    # NEW: purity/phase behaviour rule
+    phase_rule = PhaseTransitionRule(
+        high_purity_cutoff=0.9,
+        purinium_cutoff=0.999,
+        smooth_strength=0.5,
+        amp_strength=3.0,
+        purinium_damp=5.0,
+    )
+    world.interaction_rules.append(phase_rule)
+
     
     base_diffusion = 0.5
     alpha = 1.0  # how strongly low entropy boosts diffusion

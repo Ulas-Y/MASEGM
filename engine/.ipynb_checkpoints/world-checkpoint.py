@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
 from typing import List
 
+from engine.rules.interaction_rules import InteractionRule
+from engine.rules.mana_rules import ManaRule
+from engine.rules.matter_rules import MatterRule
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
-from engine.rules.mana_rules import ManaRule
-from engine.rules.matter_rules import MatterRule
-from engine.rules.interaction_rules import InteractionRule
+
+
 
 @dataclass
 class World:

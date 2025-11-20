@@ -1,20 +1,20 @@
 import numpy as np
 
-
 class EnergyTensor:
     """
-    Very simple placeholder "energy tensor":
-    for now it's just a scalar energy field.
-
-    Later you can upgrade this to a full tensor (T_ij).
+    For now it's a scalar energy field, but we give it a `.grid`
+    attribute to match ManaField and MatterField.
     """
 
     def __init__(self, shape=(100, 100), initial_value: float = 0.0):
         self.shape = shape
-        self.energy = np.full(shape, initial_value, dtype=float)
+        self.grid = np.full(shape, initial_value, dtype=float)
+
+        # For backward compatibility:
+        self.energy = self.grid
 
     def add_energy(self, y: int, x: int, amount: float) -> None:
-        self.energy[y, x] += amount
+        self.grid[y, x] += amount
 
     def total_energy(self) -> float:
-        return float(self.energy.sum())
+        return float(self.grid.sum())
