@@ -1,14 +1,20 @@
+import numpy as np
 from engine.rules.interaction_rules import ManaCondensesToMatter
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
 from engine.rules.mana_rules import ConstantManaSource, BScaleManaGrowth
 from engine.world import World
-from engine.utils import EngineConfig, plot_scalar_field, mana_entropy
+from engine.utils import EngineConfig, plot_scalar_field, mana_entropy, detect_ness
+
 
 
 def main(growth_k: float = 0.5, steps: int | None = None):
     cfg = EngineConfig(ny=100, nx=100, dt=0.1, steps=100)
+    n_cells = cfg.nx * cfg.ny
+    S_max = np.log(n_cells)
+
+
     if steps is not None:
         cfg.steps = steps
     
@@ -18,6 +24,10 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     
     world = World(mana=mana, matter=matter, energy=energy)
     
+    condense = ManaCondensesToMatter(base_rate=0.01, entropy_sensitivity=2.0)
+    world.interaction_rules.append(condense)
+    
+    
     source = ConstantManaSource(cfg.ny // 2, cfg.nx // 2, rate=1.0)
     world.mana_rules.append(source)
     
@@ -25,18 +35,43 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     b_growth = BScaleManaGrowth(k=growth_k)
     world.mana_rules.append(b_growth)
     
-    diffusion_rate = 0.5
-    
+    base_diffusion = 0.5
+    alpha = 1.0  # how strongly low entropy boosts diffusion
+
+    total_history = []
+    entropy_history = []
+
     for step in range(cfg.steps):
+        # compute global entropy BEFORE this step’s diffusion
+        S = mana_entropy(world.mana.grid)
+        entropy_history.append(S)
+
+        frac = S / S_max
+        diffusion_rate = base_diffusion * (1.0 + alpha * (1.0 - frac))
+
+        condense.set_entropy(S, S_max)   # <-- pass entropy into the rule
+
         world.step(cfg.dt)
         world.mana.diffuse(diffusion_rate, cfg.dt)
+
+        total_history.append(world.mana.total_mana())
+
+    total = total_history[-1]
+    S_final = entropy_history[-1]
     
-    total = world.mana.total_mana()
-    S = mana_entropy(world.mana.grid)
+    ness_mana, span_mana, mean_mana = detect_ness(total_history)
+    ness_S, span_S, mean_S = detect_ness(entropy_history)
     
     print(f"Total mana: {total}")
-    print(f"Mana entropy: {S}")
+    print(f"Mana entropy (final): {S_final}")
+    
+    print("NESS check (last window):")
+    print(f"  Mana   -> is_ness={ness_mana}, span={span_mana}, mean={mean_mana}")
+    print(f"  Entropy-> is_ness={ness_S}, span={span_S}, mean={mean_S}")
+    
+    print(f"Mana entropy (min,max): {min(entropy_history)}, {max(entropy_history)}")
     plot_scalar_field(world.mana.grid, title="Mana after world evolution")
+
 
 
 
