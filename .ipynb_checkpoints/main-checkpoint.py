@@ -1,3 +1,4 @@
+from engine.rules.interaction_rules import ManaCondensesToMatter
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
@@ -14,6 +15,9 @@ def main():
     energy = EnergyTensor(shape=(cfg.ny, cfg.nx), initial_value=0.0)
 
     world = World(mana=mana, matter=matter, energy=energy)
+    
+    interaction = ManaCondensesToMatter(rate=0.02)
+    world.interaction_rules.append(interaction)
 
     # Add rules
     source = ConstantManaSource(cfg.ny // 2, cfg.nx // 2, rate=1.0)

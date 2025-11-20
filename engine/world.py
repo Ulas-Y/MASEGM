@@ -8,7 +8,6 @@ from engine.rules.mana_rules import ManaRule
 from engine.rules.matter_rules import MatterRule
 from engine.rules.interaction_rules import InteractionRule
 
-
 @dataclass
 class World:
     mana: ManaField
@@ -16,7 +15,7 @@ class World:
     energy: EnergyTensor
 
     mana_rules: List[ManaRule] = field(default_factory=list)
-    matter_rules: List<MatterRule] = field(default_factory=list)
+    matter_rules: List[MatterRule] = field(default_factory=list)
     interaction_rules: List[InteractionRule] = field(default_factory=list)
 
     def step(self, dt: float) -> None:
