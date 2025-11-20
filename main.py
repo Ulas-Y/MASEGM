@@ -28,4 +28,11 @@ def main():
     # Matter + energy unused yet, but they are ready.
 
 if __name__ == "__main__":
+    
+    diffusion_rate = 0.5
+
+    for step in range(cfg.steps):
+        source.apply(mana, cfg.dt)
+        mana.diffuse(diffusion_rate, cfg.dt)
+
     main()
