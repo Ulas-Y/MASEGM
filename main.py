@@ -5,6 +5,7 @@ from engine.fields.energy_tensor import EnergyTensor
 from engine.rules.mana_rules import ConstantManaSource
 from engine.utils import EngineConfig, plot_scalar_field
 from engine.world import World
+from engine.rules.mana_rules import ConstantManaSource, BScaleManaGrowth
 
 
 def main():
@@ -20,15 +21,22 @@ def main():
     world.interaction_rules.append(interaction)
 
     # Add rules
+    # Existing constant mana source at center
     source = ConstantManaSource(cfg.ny // 2, cfg.nx // 2, rate=1.0)
     world.mana_rules.append(source)
+
+    # New B-scale mana growth rule
+    # small positive k → gentle global growth
+    # k=0 → no growth; k<0 → global decay
+    b_growth = BScaleManaGrowth(k=0.5)
+    world.mana_rules.append(b_growth)
 
     diffusion_rate = 0.5
 
     for step in range(cfg.steps):
         world.step(cfg.dt)
-        # simple global diffusion outside the rule system for now
         world.mana.diffuse(diffusion_rate, cfg.dt)
+
 
     print("Total mana:", world.mana.total_mana())
     plot_scalar_field(world.mana.grid, title="Mana after world evolution")
