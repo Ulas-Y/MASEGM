@@ -4,7 +4,7 @@ b_calculus.py
 Full implementation of the B-Scale arithmetic, B-derivative, and B-integral
 based on your formal definitions.
 
-Author: YOU (concept) + ChatGPT (implementation)
+Author: ME (concept) + ChatGPT (implementation)
 """
 
 import numpy as np
@@ -139,4 +139,78 @@ def b_derivative_sympy(f, x):
     ln_x = sp.log(x)
     return sp.exp(sp.diff(sp.log(f), ln_x))
 
+
+# ... your existing B-calculus code ...
+
+
+def log_gradient(field: np.ndarray, eps: float = 1e-12):
+    """
+    Gradient of ln(field) using central differences with periodic-ish boundaries.
+
+    Returns (gy, gx) arrays.
+    """
+    f = np.maximum(field, eps)
+    logf = np.log(f)
+
+    gy = 0.5 * (np.roll(logf, -1, axis=0) - np.roll(logf, 1, axis=0))
+    gx = 0.5 * (np.roll(logf, -1, axis=1) - np.roll(logf, 1, axis=1))
+    return gy, gx
+
+
+def b_gradient(field: np.ndarray, eps: float = 1e-12):
+    """
+    B-gradient: exp(grad ln(field)).
+
+    Mostly for future use (forces, flows). For diffusion we mainly
+    use log_gradient/log_laplacian.
+    """
+    gy, gx = log_gradient(field, eps=eps)
+    return np.exp(gy), np.exp(gx)
+
+
+def log_laplacian(field: np.ndarray, eps: float = 1e-12):
+    """
+    Discrete Laplacian of ln(field) on a 2D grid with simple 5-point stencil.
+
+    This is the main operator we use for B-diffusion.
+    """
+    f = np.maximum(field, eps)
+    logf = np.log(f)
+
+    lap = (
+        -4.0 * logf
+        + np.roll(logf, 1, axis=0)
+        + np.roll(logf, -1, axis=0)
+        + np.roll(logf, 1, axis=1)
+        + np.roll(logf, -1, axis=1)
+    )
+    return lap
+
+
+def b_laplacian(field: np.ndarray, eps: float = 1e-12):
+    """
+    B-Laplacian: exp(Δ ln(field)).
+
+    This is a multiplicative analogue of the usual Laplacian.
+    """
+    lap_log = log_laplacian(field, eps=eps)
+    return np.exp(lap_log)
+
+
+__all__ = [
+    # your existing stuff...
+    "b_add",
+    "b_sub",
+    "b_mult",
+    "b_div",
+    "b_integral",
+    "b_derivative",
+    "b_derivative_torch",
+    "b_integral_torch",
+    "b_derivative_sympy",
+    "log_gradient",
+    "b_gradient",
+    "log_laplacian",
+    "b_laplacian",
+]
 

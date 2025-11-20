@@ -62,7 +62,7 @@ def main(growth_k: float = 0.5, steps: int | None = None):
         condense.set_entropy(S, S_max)   # <-- pass entropy into the rule
 
         world.step(cfg.dt)
-        world.mana.diffuse(diffusion_rate, cfg.dt)
+        world.mana.b_diffuse(diffusion_rate, cfg.dt)  # <-- NEW
 
         total_history.append(world.mana.total_mana())
 

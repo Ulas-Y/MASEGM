@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.signal import convolve2d
 from engine.math.b_calculus import b_add, b_mul  # we’ll use these first
+from engine.math.b_calculus import log_laplacian
 
 
 class ManaField:
@@ -42,6 +43,19 @@ class ManaField:
         """
         lap = convolve2d(self.grid, self._LAPLACIAN_KERNEL, mode="same", boundary="symm")
         self.grid += rate * dt * lap
+    
+    def b_diffuse(self, rate: float, dt: float) -> None:
+        """
+        B-diffusion: multiplicative analogue of diffusion.
+
+        In log-space:
+            log m_new = log m + rate * Δ log m * dt
+        So in normal space:
+            m_new = m * exp(rate * Δ log m * dt)
+        """
+        lap_log = log_laplacian(self.grid)
+        self.grid *= np.exp(rate * lap_log * dt)
+        self.ensure_positive()
     
     def copy(self) -> "ManaField":
         mf = ManaField(self.shape)
