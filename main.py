@@ -13,6 +13,7 @@ from engine.fields.energy_tensor import EnergyTensor
 from engine.utils import EngineConfig, plot_scalar_field, mana_entropy, detect_ness
 from engine.world import World
 from engine.rules.phase_rules import PhaseTransitionRule
+from engine.constants import C_MANA, K_MANA
 
 
 def main(growth_k: float = 0.5, steps: int | None = None):
@@ -79,7 +80,7 @@ def main(growth_k: float = 0.5, steps: int | None = None):
         world.step(cfg.dt)
     
         max_dt_diffusion = 0.25 * (1.0 / C_MANA)  # CFL-like condition
-        effective_dt = min(dt, max_dt_diffusion)
+        effective_dt = min(cfg.dt, max_dt_diffusion)
 
         world.mana.b_diffuse(diffusion_rate, effective_dt)
         world.energy.b_diffuse(energy_diffusion, cfg.dt)
