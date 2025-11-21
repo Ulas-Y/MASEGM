@@ -7,12 +7,12 @@ from engine.rules.interaction_rules import (
     ManaEnergyBackReaction,   # NEW
 )
 
-from engine.rules.phase_rules import PhaseTransitionRule
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
 from engine.utils import EngineConfig, plot_scalar_field, mana_entropy, detect_ness
 from engine.world import World
+from engine.rules.phase_rules import PhaseTransitionRule
 
 
 def main(growth_k: float = 0.5, steps: int | None = None):
@@ -36,17 +36,20 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     b_growth = BScaleManaGrowth(k=growth_k)
     world.mana_rules.append(b_growth)
     
+    # NEW: phase transition rule (mana purity phases)
+    
+    # if you still use ManaCondensesToMatter, keep it too:
+    # condense = ManaCondensesToMatter(...)
+    # world.interaction_rules.append(condense)
+    
     condense = ManaCondensesToMatter(base_rate=0.01, entropy_sensitivity=2.0)
     world.interaction_rules.append(condense)
     
     phase_rule = PhaseTransitionRule(
-        high_purity_cutoff=0.9,
-        purinium_cutoff=0.999,
-        smooth_strength=0.5,
-        amp_strength=3.0,
-        purinium_damp=5.0,
+        purinium_density_threshold=5.0  # or whatever number you want
     )
     world.interaction_rules.append(phase_rule)
+
     
     energy_growth = EnergyCoupledBGrowth(alpha=1.5)
     world.interaction_rules.append(energy_growth)
@@ -101,9 +104,52 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     print(f"Mana entropy (min,max): {min(entropy_history)}, {max(entropy_history)}")
     plot_scalar_field(world.mana.grid, title="Mana after world evolution")
 
+    return world
+
 
 
 
 
 if __name__ == "__main__":
     main()
+
+def purinium_core_test(growth_k: float = 1.0, steps: int = 400,
+                       return_world: bool = False):
+    cfg = EngineConfig(ny=100, nx=100, dt=0.1, steps=steps)
+
+    mana = ManaField(shape=(cfg.ny, cfg.nx), initial_value=0.0)
+    matter = MatterField(shape=(cfg.ny, cfg.nx), initial_value=0.0)
+    energy = EnergyTensor(shape=(cfg.ny, cfg.nx), initial_value=0.0)
+
+    world = World(mana=mana, matter=matter, energy=energy)
+
+    source = ConstantManaSource(cfg.ny // 2, cfg.nx // 2, rate=1.0)
+    world.mana_rules.append(source)
+
+    b_growth = BScaleManaGrowth(k=growth_k)
+    world.mana_rules.append(b_growth)
+    
+    # ...
+    phase_rule = PhaseTransitionRule(
+        purinium_density_threshold=5.0  # or any value you want
+    )
+    world.interaction_rules.append(phase_rule)
+    
+    for _ in range(cfg.steps):
+        world.step(cfg.dt)
+        world.mana.diffuse(0.5, cfg.dt)  # or your tuned diffusion
+    
+    # stats
+    total_mana = world.mana.total_mana()
+    phase = world.mana.phase          # phase map we stored in the rule
+    purinium_cells = (phase == 4).sum()
+    aether_cells = (phase == 3).sum()
+    
+    print(f"Total mana: {total_mana}")
+    print(f"Purinium cells: {purinium_cells}, Aether cells: {aether_cells}")
+    
+    plot_scalar_field(world.mana.grid, title="Purinium core test: mana field")
+    
+    if return_world:
+        return world
+    
