@@ -1,7 +1,9 @@
 import numpy as np
 from scipy.signal import convolve2d
+from engine.math.b_calculus import log_gradient, log_laplacian  # you already had log_laplacian
+from engine.math.b_calculus import divergence                  # NEW
 from engine.math.b_calculus import b_add, b_mul  # we’ll use these first
-from engine.math.b_calculus import log_laplacian
+
 
 
 class ManaField:
@@ -55,6 +57,40 @@ class ManaField:
         """
         lap_log = log_laplacian(self.grid)
         self.grid *= np.exp(rate * lap_log * dt)
+        self.ensure_positive()
+    
+    def b_advect(self, strength: float, dt: float) -> None:
+        """
+        B-style advection / transport of mana.
+
+        We build a velocity field v from gradients of ln(m):
+
+            gy, gx = grad ln m
+            v = -strength * grad ln m
+
+        Then evolve mana using a discrete continuity equation:
+
+            ∂m/∂t + div(m v) = 0  → m_new = m_old - dt * div(m v)
+        """
+        if strength == 0.0:
+            return
+
+        # Use log-gradient so behaviour is multiplicative-scale aware
+        gy, gx = log_gradient(self.grid)
+
+        # Velocity field (you can flip the sign if you want flows from low→high)
+        vy = -strength * gy
+        vx = -strength * gx
+
+        # Flux = m * v
+        Fy = self.grid * vy
+        Fx = self.grid * vx
+
+        # Divergence of the flux
+        divF = divergence(Fy, Fx)
+
+        # Advection update
+        self.grid -= dt * divF
         self.ensure_positive()
     
     def copy(self) -> "ManaField":

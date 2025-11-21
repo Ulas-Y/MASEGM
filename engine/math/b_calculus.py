@@ -197,6 +197,16 @@ def b_laplacian(field: np.ndarray, eps: float = 1e-12):
     return np.exp(lap_log)
 
 
+def divergence(Fy: np.ndarray, Fx: np.ndarray):
+    """
+    Divergence of a 2D vector field F = (Fy, Fx) using central differences
+    with periodic-like boundaries.
+    """
+    dFy_dy = 0.5 * (np.roll(Fy, -1, axis=0) - np.roll(Fy, 1, axis=0))
+    dFx_dx = 0.5 * (np.roll(Fx, -1, axis=1) - np.roll(Fx, 1, axis=1))
+    return dFy_dy + dFx_dx
+
+
 __all__ = [
     # your existing stuff...
     "b_add",

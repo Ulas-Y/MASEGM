@@ -2,6 +2,8 @@ import numpy as np
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
+from engine.math.b_calculus import log_laplacian
+
 
 
 class InteractionRule:
@@ -70,6 +72,30 @@ class EnergyCoupledBGrowth(InteractionRule):
         M *= factor
         mana.ensure_positive()
 
+class ManaEnergyBackReaction(InteractionRule):
+    """
+    Energy back-reaction from mana structure.
+
+    dE/dt = gamma * |Δ ln m| - decay * E
+
+    - Sharp mana features (large |Δ ln m|) generate energy.
+    - Energy decays elsewhere at rate 'decay'.
+    """
+
+    def __init__(self, gamma: float = 1.0, decay: float = 0.5):
+        self.gamma = gamma
+        self.decay = decay
+
+    def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
+        m = mana.grid
+        e = energy.grid
+
+        lap_log_m = log_laplacian(m)
+        source = self.gamma * np.abs(lap_log_m)
+
+        # reaction + decay
+        e += (source - self.decay * e) * dt
+        energy.ensure_nonnegative()
 
 
 
