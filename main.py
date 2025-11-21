@@ -78,8 +78,10 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     
         world.step(cfg.dt)
     
-        # diffusion (smoothing)
-        world.mana.b_diffuse(diffusion_rate, cfg.dt)
+        max_dt_diffusion = 0.25 * (1.0 / C_MANA)  # CFL-like condition
+        effective_dt = min(dt, max_dt_diffusion)
+
+        world.mana.b_diffuse(diffusion_rate, effective_dt)
         world.energy.b_diffuse(energy_diffusion, cfg.dt)
     
         # NEW: transport (currents)
@@ -141,9 +143,10 @@ def purinium_core_test(growth_k: float = 1.0, steps: int = 400,
     
     # stats
     total_mana = world.mana.total_mana()
-    phase = world.mana.phase          # phase map we stored in the rule
-    purinium_cells = (phase == 4).sum()
-    aether_cells = (phase == 3).sum()
+    phase = world.mana.phase
+    purinium_cells = int((phase == 5).sum())
+    aether_cells = int((phase == 4).sum())
+
     
     print(f"Total mana: {total_mana}")
     print(f"Purinium cells: {purinium_cells}, Aether cells: {aether_cells}")

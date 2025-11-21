@@ -3,6 +3,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Tuple
+from engine.utils.thermo_utils import mana_energy_from_state
+from engine.constants import K_MANA, C_MANA  # if needed
 
 import numpy as np
 
@@ -291,7 +293,21 @@ class PhaseTransitionRule(InteractionRule):
 
                 # for Purinium we could optionally add big energy spikes
                 if name == "purinium":
-                    energy_grid[mask] += converted  # simple for now
+                    # First: matter annihilation -> *mana* (we already did converted)
+                    # Now: some fraction becomes energy via your formula
+
+                    local_purity = purity[mask]
+                    local_mana   = mana_grid[mask]
+
+                    # full mana energy in those cells:
+                    full_E = mana_energy_from_state(local_mana, local_purity)
+
+                    # Only convert the *newly created* mana portion to energy:
+                    # scale by converted / local_mana (safe with small epsilon)
+                    ratio = np.where(local_mana > 0, converted / (local_mana + 1e-12), 0.0)
+                    dE = full_E * ratio
+
+                    energy_grid[mask] += dE
 
             if props.mana_to_energy != 0.0:
                 # mana leaking into energy (radiation, heating, etc.)

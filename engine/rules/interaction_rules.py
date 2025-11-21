@@ -97,5 +97,24 @@ class ManaEnergyBackReaction(InteractionRule):
         e += (source - self.decay * e) * dt
         energy.ensure_nonnegative()
 
+class EnergyToManaCondensation(InteractionRule):
+    def __init__(self, rate: float = 0.01):
+        self.rate = rate
+
+    def apply(self, mana, matter, energy, dt: float) -> None:
+        e = energy.grid
+        m = mana.grid
+
+        # where purity is already high, energy more easily forms mana
+        purity = getattr(mana, "purity", None)
+        if purity is None:
+            # fallback: assume moderate purity everywhere
+            purity = np.full_like(m, 0.5)
+
+        # conversion is stronger at high purity
+        conv = self.rate * purity * e * dt
+
+        energy.grid -= conv
+        mana.grid   += conv / (K_MANA * (C_MANA ** 2))  # invert your formula
 
 
