@@ -1,13 +1,14 @@
-import numpy as np
+# engine/backends/backend_numpy.py
 
-from .backend import Backend  # if in a package; otherwise just from backend import Backend
+import numpy as np
+from .backend import Backend
 
 
 class NumpyBackend(Backend):
     def __init__(self, dtype=np.float64):
         self.dtype = dtype
 
-    # ---- basic ----
+    # basic ops
     def asarray(self, x):
         return np.asarray(x, dtype=self.dtype)
 
@@ -23,7 +24,7 @@ class NumpyBackend(Backend):
     def clip(self, x, min_val, max_val):
         return np.clip(x, min_val, max_val)
 
-    # ---- B-arithmetic ----
+    # B-arithmetic
     def b_add(self, x, y):
         return x * y
 
@@ -40,7 +41,7 @@ class NumpyBackend(Backend):
         y = np.where((y <= 0) | (np.isclose(y, 1.0)), eps, y)
         return np.log(x) / np.log(y)
 
-    # ---- grid ops (copying your existing logic) ----
+    # grid ops = directly based on your existing code
     def log_gradient(self, field, eps: float = 1e-12):
         f = np.maximum(field, eps)
         logf = np.log(f)
