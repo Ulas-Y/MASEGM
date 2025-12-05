@@ -15,6 +15,7 @@ from engine.world import World
 from engine.constants import C_MANA, K_MANA
 from engine.rules.phase_rules import PhaseTransitionRule
 from engine.physics.mana_phase import PhaseThresholds
+from engine.real_physics.physics import GravityAttraction
 
 def main(growth_k: float = 0.5, steps: int | None = None):
     cfg = EngineConfig(ny=100, nx=100, dt=0.1, steps=100)
@@ -53,7 +54,7 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     world.interaction_rules.append(phase_rule)
     
     # remove the second PhaseTransitionRule(...) block entirely
-
+    
     
     energy_growth = EnergyCoupledBGrowth(alpha=1.5)
     world.interaction_rules.append(energy_growth)
@@ -67,32 +68,35 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     alpha = 1.0                #default 1.0
     energy_diffusion = 0.3     #default 0.3
     transport_strength = 0.3   #default 0.3 "tweak this"
-
+    
     total_history = []
     entropy_history = []
     
     for step in range(cfg.steps):
         S = mana_entropy(world.mana.grid)
         entropy_history.append(S)
-    
+        
         frac = S / S_max
         diffusion_rate = base_diffusion * (1.0 + alpha * (1.0 - frac))
-    
+        
         condense.set_entropy(S, S_max)
-    
+        
         world.step(cfg.dt)
-    
+        
         max_dt_diffusion = 0.25 * (1.0 / C_MANA)  # CFL-like condition
         effective_dt = min(cfg.dt, max_dt_diffusion)
-
+        
         world.mana.b_diffuse(diffusion_rate, effective_dt)
         world.energy.b_diffuse(energy_diffusion, cfg.dt)
-    
+        
         # NEW: transport (currents)
         world.mana.b_advect(transport_strength, cfg.dt)
-    
+        
         total_history.append(world.mana.total_mana())
-    
+        
+        gravity = GravityAttraction(G=0.05)  # Low to start
+        world.physics_rules.append(gravity)
+        
     
     total = total_history[-1]
     S_final = entropy_history[-1]

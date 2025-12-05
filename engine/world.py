@@ -19,6 +19,7 @@ class World:
     mana_rules: List[ManaRule] = field(default_factory=list)
     matter_rules: List[MatterRule] = field(default_factory=list)
     interaction_rules: List[InteractionRule] = field(default_factory=list)
+    physics_rules: List[PhysicsRule] = field(default_factory=list)
 
     def step(self, dt: float) -> None:
         """Apply all rules once."""
@@ -30,3 +31,6 @@ class World:
 
         for rule in self.interaction_rules:
             rule.apply(self.mana, self.matter, self.energy, dt)
+            
+        for rule in self.physics_rules:  # New: Physics after interactions
+            rule.apply(self.mana, dt)  # Apply to mana for now
