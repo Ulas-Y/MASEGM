@@ -1,23 +1,36 @@
-import numpy as np
 from dataclasses import dataclass
+from typing import Any
+
+from engine.math import b_calculus
+
+xp = b_calculus.xp
 
 
-def clamp(x, xmin=None, xmax=None):
-    """Clamp a value or array between xmin and xmax."""
+def clamp(x: Any, xmin=None, xmax=None):
+    """Clamp a value or array between xmin and xmax using the active backend."""
+
+    x = xp.asarray(x)
+    if xmin is not None and xmax is not None:
+        return xp.clip(x, xmin, xmax)
     if xmin is not None:
-        x = np.maximum(x, xmin)
+        return xp.maximum(x, xmin)
     if xmax is not None:
-        x = np.minimum(x, xmax)
+        return xp.clip(x, float("-inf"), xmax)
     return x
 
 
-def normalize_field(field: np.ndarray) -> np.ndarray:
-    """Return a normalized copy of the field (0..1)."""
-    fmin = field.min()
-    fmax = field.max()
-    if fmax == fmin:
-        return np.zeros_like(field)
-    return (field - fmin) / (fmax - fmin)
+def normalize_field(field: Any) -> Any:
+    """Return a normalized copy of the field (0..1) on the active backend."""
+
+    arr = xp.asarray(field)
+    fmin = arr.min()
+    fmax = arr.max()
+    denom = fmax - fmin
+
+    if denom.item() == 0:  # type: ignore[attr-defined]
+        return xp.zeros(arr.shape, dtype=getattr(arr, "dtype", None))
+
+    return (arr - fmin) / denom
 
 
 @dataclass(frozen=True)

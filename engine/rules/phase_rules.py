@@ -15,19 +15,19 @@ else:  # pragma: no cover - torch optional
 
 from .interaction_rules import InteractionRule
 
-from ..physics.mana_energy import (
+from ..metaphysics.mana_energy import (
     ManaEnergyParams,
     mana_purity,
     mana_energy_density,
 )
-from ..physics.mana_phase import (
+from ..metaphysics.mana_phase import (
     PhaseCode,
     PhaseProperties,
     PhaseThresholds,
     classify_phases,
     default_phase_properties,
 )
-from ..physics.mana_conversion import apply_phase_conversions
+from ..metaphysics.mana_conversion import apply_phase_conversions
 
 
 class PhaseTransitionRule(InteractionRule):

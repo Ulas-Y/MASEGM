@@ -6,22 +6,28 @@ from dataclasses import dataclass
 from typing import Tuple, Sequence
 
 import numpy as np
+from importlib.util import find_spec
+
+if find_spec("torch") is not None:  # pragma: no cover - torch optional
+    import torch
+else:  # pragma: no cover - torch optional
+    torch = None
 
 from .interaction_rules import InteractionRule
 
-from ..physics.mana_energy import (
+from ..metaphysics.mana_energy import (
     ManaEnergyParams,
     mana_purity,
     mana_energy_density,
 )
-from ..physics.mana_phase import (
+from ..metaphysics.mana_phase import (
     PhaseCode,
     PhaseProperties,
     PhaseThresholds,
     classify_phases,
     default_phase_properties,
 )
-from ..physics.mana_conversion import apply_phase_conversions
+from ..metaphysics.mana_conversion import apply_phase_conversions
 
 
 class PhaseTransitionRule(InteractionRule):
@@ -123,20 +129,37 @@ class PhaseTransitionRule(InteractionRule):
         # base feedback around the pivot
         delta_p = purity - p_pivot  # negative below, positive above
 
+        # pick backend matching the mana grid
+        xp = torch if (torch is not None and isinstance(mana_grid, torch.Tensor)) else np
+
+        def _as_backend_array(x):
+            if xp is np:
+                return np.asarray(x)
+            return torch.as_tensor(x, device=mana_grid.device, dtype=mana_grid.dtype)
+
+        purity = _as_backend_array(purity)
+        phase = _as_backend_array(phase)
+        delta_p = _as_backend_array(delta_p)
+
         # start with zero growth
-        growth = np.zeros_like(mana_grid)
+        growth = xp.zeros_like(mana_grid)
 
         for code in PhaseCode:
             props = self._phase_props[int(code)]
-            mask = (phase == int(code))
-            if not np.any(mask):
+            mask = phase == int(code)
+            has_mask = xp.any(mask)
+            if xp is torch:
+                has_mask = bool(has_mask.item())
+            if not has_mask:
                 continue
 
-            local = props.entropy_feedback * delta_p[mask]
+            local_delta = delta_p[mask]
+            local = props.entropy_feedback * local_delta
 
             # extra boost for high-purity phases to self-purify
             if props.purify_boost != 0.0:
-                local += props.purify_boost * np.maximum(delta_p[mask], 0.0)
+                zero = xp.zeros_like(local_delta)
+                local += props.purify_boost * xp.maximum(local_delta, zero)
 
             # plus any unconditional mana decay (e.g. particles, plasma)
             if props.mana_decay != 0.0:
@@ -146,5 +169,5 @@ class PhaseTransitionRule(InteractionRule):
 
         # apply multiplicative update; clip to avoid negative densities
         factor = 1.0 + growth * dt
-        factor = np.clip(factor, 0.0, 1e6)
+        factor = xp.clip(factor, 0.0, 1e6)
         mana_grid *= factor

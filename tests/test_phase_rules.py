@@ -56,7 +56,7 @@ if torch is not None and "scipy" not in sys.modules:
     sys.modules["scipy.signal"] = signal_stub
 
 from engine.rules.phase_rules import PhaseTransitionRule
-from engine.physics.mana_phase import PhaseCode
+from engine.metaphysics.mana_phase import PhaseCode
 
 
 @pytest.mark.skipif(torch is None, reason="torch backend not available")
