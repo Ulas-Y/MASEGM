@@ -14,6 +14,9 @@ class TorchBackend(Backend):
         self.dtype = dtype
 
     # basic ops
+    def asnumpy(self, x):
+        return torch.as_tensor(x, device=self.device, dtype=self.dtype).detach().cpu().numpy()
+
     def asarray(self, x):
         return torch.as_tensor(x, device=self.device, dtype=self.dtype)
 
