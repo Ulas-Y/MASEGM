@@ -12,12 +12,19 @@ from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
 from engine.utils import EngineConfig, plot_scalar_field, mana_entropy, detect_ness
 from engine.world import World
-from engine.constants import C_MANA, K_MANA
+from engine.constants import (
+    C_MANA,
+    K_MANA, 
+    base_diffusion, 
+    energy_diffusion, 
+    transport_strength,
+    alpha as default_alpha,
+)
 from engine.rules.phase_rules import PhaseTransitionRule
 from engine.metaphysics.mana_phase import PhaseThresholds
 
 def main(growth_k: float = 0.5, steps: int | None = None):
-    cfg = EngineConfig(ny=100, nx=100, dt=0.1, steps=100)
+    cfg = EngineConfig(ny=256, nx=256, dt=0.1, steps=100)
     n_cells = cfg.nx * cfg.ny
     S_max = np.log(n_cells)
     
@@ -62,12 +69,8 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     back_react = ManaEnergyBackReaction(gamma=1.0, decay=0.5)
     world.interaction_rules.append(back_react)
     
+    alpha = default_alpha                #default 1.0 and this sets it back
     
-    base_diffusion = 0.5       #default 0.5
-    alpha = 1.0                #default 1.0
-    energy_diffusion = 0.3     #default 0.3
-    transport_strength = 0.3   #default 0.3 "tweak this"
-
     total_history = []
     entropy_history = []
     
