@@ -30,11 +30,20 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def full(self, shape: Any, fill_value: float) -> Any:
+    def full(self, shape: Any, fill_value: float, dtype=None) -> Any:
         """Create a backend-native array/tensor filled with ``fill_value``.
 
         Implementations should mirror ``numpy.full`` semantics while preserving
         the backend's preferred dtype and device placement.
+        """
+
+    @abstractmethod
+    def zeros(self, shape: Any, dtype=None) -> Any:
+        """Create a backend-native array/tensor of zeros.
+
+        Implementations should default to the backend's preferred dtype and
+        device but allow callers to override the dtype when necessary (e.g., to
+        store integer-coded phase labels).
         """
 
     @abstractmethod
@@ -147,4 +156,13 @@ class Backend(ABC):
         along the corresponding axes with periodic boundaries. Broadcasting of
         inputs should follow backend rules, and outputs must maintain the
         common dtype/device.
+        """
+
+    @abstractmethod
+    def laplacian(self, field: Any) -> Any:
+        """Compute the discrete 5-point Laplacian of ``field`` on a 2D grid.
+
+        The implementation must mirror NumPy/Torch semantics for indexing,
+        dtype, and device placement while using periodic boundaries via roll
+        operations.
         """

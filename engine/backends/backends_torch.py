@@ -17,8 +17,11 @@ class TorchBackend(Backend):
     def asarray(self, x):
         return torch.as_tensor(x, device=self.device, dtype=self.dtype)
 
-    def full(self, shape, fill_value):
-        return torch.full(shape, fill_value, device=self.device, dtype=self.dtype)
+    def full(self, shape, fill_value, dtype=None):
+        return torch.full(shape, fill_value, device=self.device, dtype=self.dtype if dtype is None else dtype)
+
+    def zeros(self, shape, dtype=None):
+        return torch.zeros(shape, device=self.device, dtype=self.dtype if dtype is None else dtype)
 
     def log(self, x):
         return torch.log(x)
@@ -73,3 +76,12 @@ class TorchBackend(Backend):
         dFy_dy = 0.5 * (torch.roll(Fy, -1, 0) - torch.roll(Fy, 1, 0))
         dFx_dx = 0.5 * (torch.roll(Fx, -1, 1) - torch.roll(Fx, 1, 1))
         return dFy_dy + dFx_dx
+
+    def laplacian(self, field):
+        return (
+            -4.0 * field
+            + torch.roll(field, 1, 0)
+            + torch.roll(field, -1, 0)
+            + torch.roll(field, 1, 1)
+            + torch.roll(field, -1, 1)
+        )

@@ -12,8 +12,11 @@ class NumpyBackend(Backend):
     def asarray(self, x):
         return np.asarray(x, dtype=self.dtype)
 
-    def full(self, shape, fill_value):
-        return np.full(shape, fill_value, dtype=self.dtype)
+    def full(self, shape, fill_value, dtype=None):
+        return np.full(shape, fill_value, dtype=self.dtype if dtype is None else dtype)
+
+    def zeros(self, shape, dtype=None):
+        return np.zeros(shape, dtype=self.dtype if dtype is None else dtype)
 
     def log(self, x):
         return np.log(x)
@@ -68,3 +71,12 @@ class NumpyBackend(Backend):
         dFy_dy = 0.5 * (np.roll(Fy, -1, axis=0) - np.roll(Fy, 1, axis=0))
         dFx_dx = 0.5 * (np.roll(Fx, -1, axis=1) - np.roll(Fx, 1, axis=1))
         return dFy_dy + dFx_dx
+
+    def laplacian(self, field):
+        return (
+            -4.0 * field
+            + np.roll(field, 1, axis=0)
+            + np.roll(field, -1, axis=0)
+            + np.roll(field, 1, axis=1)
+            + np.roll(field, -1, axis=1)
+        )
