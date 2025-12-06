@@ -3,13 +3,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .math_utils import normalize_field
+from engine.math import b_calculus
 # ... existing plot_scalar_field here ...
 
 def plot_scalar_field(field: np.ndarray, title: str = "Field") -> None:
     """
     Quick 2D visualization for a scalar field.
     """
-    img = normalize_field(field)
+    be = b_calculus.get_backend()
+    field_np = be.asnumpy(field)
+    img = normalize_field(field_np)
     plt.imshow(img, origin="lower", interpolation="nearest")
     plt.colorbar(label="normalized value")
     plt.title(title)
@@ -37,8 +40,11 @@ def plot_phase_map(phase: np.ndarray, title: str = "Mana phases") -> None:
     bounds = np.arange(-0.5, 6.5, 1.0)
     norm = BoundaryNorm(bounds, cmap.N)
 
+    be = b_calculus.get_backend()
+    phase_np = be.asnumpy(phase)
+
     fig, ax = plt.subplots(figsize=(5, 5))
-    im = ax.imshow(phase, origin="lower", cmap=cmap, norm=norm)
+    im = ax.imshow(phase_np, origin="lower", cmap=cmap, norm=norm)
     ax.set_title(title)
 
     # make a tiny custom legend
@@ -63,8 +69,11 @@ def plot_purity_field(purity: np.ndarray, title: str = "Mana purity") -> None:
     """
     Continuous purity heatmap (0..1).
     """
+    be = b_calculus.get_backend()
+    purity_np = be.asnumpy(purity)
+
     fig, ax = plt.subplots(figsize=(5, 5))
-    im = ax.imshow(purity, origin="lower", vmin=0.0, vmax=1.0)
+    im = ax.imshow(purity_np, origin="lower", vmin=0.0, vmax=1.0)
     ax.set_title(title)
     cbar = plt.colorbar(im, ax=ax)
     cbar.set_label("purity (mana / (mana + matter))")
