@@ -14,7 +14,7 @@ from engine.utils import EngineConfig, plot_scalar_field, mana_entropy, detect_n
 from engine.world import World
 from engine.constants import C_MANA, K_MANA
 from engine.rules.phase_rules import PhaseTransitionRule
-from engine.physics.mana_phase import PhaseThresholds
+from engine.metaphysics.mana_phase import PhaseThresholds
 
 def main(growth_k: float = 0.5, steps: int | None = None):
     cfg = EngineConfig(ny=100, nx=100, dt=0.1, steps=100)
