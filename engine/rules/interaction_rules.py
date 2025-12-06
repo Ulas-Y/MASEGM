@@ -33,14 +33,14 @@ class ManaCondensesToMatter(InteractionRule):
         mana_grid = be.asarray(mana.grid)
         matter_grid = be.asarray(matter.grid)
 
-        rate = self.base_rate
+        rate = be.asarray(self.base_rate)
         if self._last_entropy is not None:
             frac = self._last_entropy / self._S_max  # 0..1
             # low entropy -> bigger factor; high entropy -> closer to 1
-            factor = be.exp(self.entropy_sensitivity * (1.0 - frac))
-            rate = self.base_rate * factor
+            factor = be.exp(be.asarray(self.entropy_sensitivity * (1.0 - frac)))
+            rate = rate * factor
 
-        delta = rate * mana_grid * dt
+        delta = rate * mana_grid * be.asarray(dt)
 
         mana.grid = mana_grid - delta
         matter.grid = matter_grid + delta
