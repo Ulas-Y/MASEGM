@@ -7,11 +7,12 @@ New backends can self-register by calling :func:`register_backend` at module
 import time, e.g. ``register_backend("jax", JAXBackend)``.
 """
 
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 BackendFactory = Callable[..., object]
 
 _backend_registry: Dict[str, BackendFactory] = {}
+TorchBackend: Optional[BackendFactory] = None
 
 
 def register_backend(name: str, factory: BackendFactory) -> None:
@@ -24,12 +25,35 @@ def register_backend(name: str, factory: BackendFactory) -> None:
     _backend_registry[name.lower()] = factory
 
 
+def _ensure_torch_registered() -> bool:
+    """Attempt to import and register the Torch backend lazily."""
+
+    global TorchBackend
+
+    if TorchBackend is not None and "torch" in _backend_registry:
+        return True
+
+    try:
+        from .backends_torch import TorchBackend as _TorchBackend  # noqa: E402
+    except Exception:
+        return False
+
+    TorchBackend = _TorchBackend
+    register_backend("torch", TorchBackend)
+    return True
+
+
 def get_backend(name: str = "numpy", **kwargs):
     """Return an instance of the requested backend (case-insensitive)."""
 
-    factory = _backend_registry.get(name.lower())
+    normalized = name.lower()
+    if normalized == "torch":
+        _ensure_torch_registered()
+
+    factory = _backend_registry.get(normalized)
     if factory is None:
-        raise ValueError(f"Unknown backend: {name}")
+        available = ", ".join(sorted(_backend_registry)) or "none"
+        raise ValueError(f"Unknown backend: {name}. Available: {available}")
     return factory(**kwargs)
 
 
@@ -44,32 +68,23 @@ def auto_backend(**kwargs):
     torch = None
     try:
         import torch  # type: ignore
-    except ImportError:
+    except Exception:
         torch = None
 
     if torch is not None:
         try:
-            if torch.cuda.is_available() and "torch" in _backend_registry:
-                return _backend_registry["torch"](**kwargs)
+            if torch.cuda.is_available() and _ensure_torch_registered():
+                return get_backend("torch", **kwargs)
         except Exception:
             # Fall back to NumPy on any CUDA probe failure.
             pass
 
-    if "numpy" not in _backend_registry:
-        raise RuntimeError("NumPy backend is not registered.")
-    return _backend_registry["numpy"](**kwargs)
+    return get_backend("numpy", **kwargs)
 
 
 from .backends_numpy import NumpyBackend  # noqa: E402
 
 register_backend("numpy", NumpyBackend)
-
-try:  # noqa: E402
-    from .backends_torch import TorchBackend
-except ImportError:  # noqa: E402
-    TorchBackend = None
-else:
-    register_backend("torch", TorchBackend)
 
 __all__ = [
     "auto_backend",
