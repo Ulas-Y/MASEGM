@@ -36,6 +36,12 @@ elif BACKEND_NAME == "numpy":
     NUMPY_BACKEND = xp
 
 
+def get_backend():
+    """Return the active backend instance (NumPy or Torch)."""
+
+    return xp
+
+
 def _backend(backend=None):
     if backend is None:
         return xp
@@ -239,6 +245,13 @@ def log_laplacian(field, eps: float = 1e-12, backend=None):
     return be.log_laplacian(_as_backend_array(field, be), eps=eps)
 
 
+def laplacian(field, backend=None):
+    """Discrete Laplacian of ``field`` on a 2D grid with periodic boundaries."""
+
+    be = _backend(backend)
+    return be.laplacian(_as_backend_array(field, be))
+
+
 def b_laplacian(field, eps: float = 1e-12, backend=None):
     """
     B-Laplacian: exp(Δ ln(field)).
@@ -312,6 +325,7 @@ __all__ = [
     "NUMPY_BACKEND",
     "TORCH_BACKEND",
     "set_backend",
+    "get_backend",
     "BACKEND_NAME",
     "xp",
     "b_add",
@@ -326,6 +340,7 @@ __all__ = [
     "log_gradient",
     "b_gradient",
     "log_laplacian",
+    "laplacian",
     "b_laplacian",
     "divergence",
     "log_gradient_torch",

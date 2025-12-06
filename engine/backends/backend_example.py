@@ -11,6 +11,14 @@ class Backend(ABC):
         ...
 
     @abstractmethod
+    def full(self, shape, fill_value, dtype=None):
+        ...
+
+    @abstractmethod
+    def zeros(self, shape, dtype=None):
+        ...
+
+    @abstractmethod
     def log(self, x):
         ...
 
@@ -54,4 +62,8 @@ class Backend(ABC):
 
     @abstractmethod
     def divergence(self, Fy, Fx):
+        ...
+
+    @abstractmethod
+    def laplacian(self, field):
         ...
