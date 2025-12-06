@@ -2,7 +2,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from .math_utils import normalize_field
 from engine.math import b_calculus
 # ... existing plot_scalar_field here ...
 
@@ -12,7 +11,16 @@ def plot_scalar_field(field: np.ndarray, title: str = "Field") -> None:
     """
     be = b_calculus.get_backend()
     field_np = be.asnumpy(field)
-    img = normalize_field(field_np)
+
+    # normalize strictly in NumPy to avoid torch/cupy objects reaching matplotlib
+    fmin = field_np.min()
+    fmax = field_np.max()
+    denom = fmax - fmin
+    if denom == 0:
+        img = np.zeros_like(field_np)
+    else:
+        img = (field_np - fmin) / denom
+
     plt.imshow(img, origin="lower", interpolation="nearest")
     plt.colorbar(label="normalized value")
     plt.title(title)
