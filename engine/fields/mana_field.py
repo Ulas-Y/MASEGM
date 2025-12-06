@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from scipy.signal import convolve2d
 from engine.math.b_calculus import log_gradient, log_laplacian  # you already had log_laplacian
@@ -95,7 +96,15 @@ class ManaField:
     
     def copy(self) -> "ManaField":
         mf = ManaField(self.shape)
-        mf.grid = self.grid.copy()
+        mf.grid = np.copy(self.grid)
+        mf.phase = np.copy(self.phase)
+
+        # Copy over any additional metadata without sharing references
+        for attr, value in self.__dict__.items():
+            if attr in {"grid", "phase", "shape"}:
+                continue
+            mf.__dict__[attr] = copy.deepcopy(value)
+
         return mf
     
     def ensure_positive(self, eps: float = 1e-12) -> None:
