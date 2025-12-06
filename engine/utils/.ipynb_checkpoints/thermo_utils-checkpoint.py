@@ -1,5 +1,7 @@
 import numpy as np
 
+from engine.math import b_calculus
+
 
 def mana_entropy(field: np.ndarray, eps: float = 1e-12) -> float:
     """
@@ -17,14 +19,23 @@ def mana_entropy(field: np.ndarray, eps: float = 1e-12) -> float:
     float
         Entropy S = -sum p_ij log p_ij  (natural log).
     """
-    total = field.sum()
-    if total <= 0:
+    be = b_calculus.xp
+
+    field_be = be.asarray(field)
+    total = field_be.sum()
+    total_value = float(total.item() if hasattr(total, "item") else total)
+
+    if total_value <= 0:
         return 0.0
 
-    p = field / total
-    p = np.maximum(p, eps)      # avoid log(0)
-    s = -np.sum(p * np.log(p))
-    return float(s)
+    p = field_be / total
+    p = be.maximum(p, be.asarray(eps))  # avoid log(0)
+    s = -(p * be.log(p)).sum()
+
+    if hasattr(be, "asnumpy"):
+        return float(be.asnumpy(s))
+
+    return float(s.item() if hasattr(s, "item") else s)
 
 def detect_ness(series, window: int = 20, rtol: float = 1e-3, atol: float = 1e-6):
     """
@@ -52,32 +63,6 @@ def detect_ness(series, window: int = 20, rtol: float = 1e-3, atol: float = 1e-6
 
 
 PHASE_NAMES = ("particles", "plasma", "gas", "liquid", "aether", "purinium")
-
-
-def phase_histogram(phase: np.ndarray) -> dict:
-    """
-    Count how many cells are in each phase code 0..5.
-    Returns a dict {name: count}.
-    """
-    counts = {}
-    total = phase.size
-    for code, name in enumerate(PHASE_NAMES):
-        n = int((phase == code).sum())
-        counts[name] = n
-    counts["total_cells"] = int(total)
-    return counts
-
-
-def print_phase_stats(phase: np.ndarray) -> None:
-    """
-    Pretty-print phase counts + percentages.
-    """
-    stats = phase_histogram(phase)
-    total = stats.pop("total_cells")
-    for name, n in stats.items():
-        frac = n / total if total > 0 else 0.0
-        print(f"{name:9s}: {n:6d}  ({frac*100:5.1f}%)")
-    print(f"total   : {total}")
 
 
 from engine.constants import K_MANA, C_MANA
