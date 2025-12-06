@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import Any
 
-import numpy as np
+from engine.math.b_calculus import xp
 
 
 @dataclass
@@ -31,10 +32,10 @@ class ManaEnergyParams:
 
 
 def mana_purity(
-    mana_grid: np.ndarray,
-    matter_grid: np.ndarray,
+    mana_grid: Any,
+    matter_grid: Any,
     eps: float = 1e-12,
-) -> np.ndarray:
+) -> Any:
     """
     Compute local purity:
 
@@ -42,16 +43,20 @@ def mana_purity(
 
     with a tiny epsilon to avoid division by zero.
     """
+    mana_grid = xp.asarray(mana_grid)
+    matter_grid = xp.asarray(matter_grid)
+    eps_arr = xp.asarray(eps)
+
     total = mana_grid + matter_grid
-    total = np.maximum(total, eps)
+    total = xp.maximum(total, eps_arr)
     return mana_grid / total
 
 
 def mana_energy_density(
-    mana_grid: np.ndarray,
-    purity: np.ndarray,
+    mana_grid: Any,
+    purity: Any,
     params: ManaEnergyParams,
-) -> np.ndarray:
+) -> Any:
     """
     Local mana energy density:
 
@@ -60,4 +65,10 @@ def mana_energy_density(
     Right now we treat rho_mana == mana_grid.
     If later you introduce a "mass per unit mana" you can factor it in here.
     """
-    return params.K_mana * mana_grid * purity * params.C_mana_sq
+    mana_grid = xp.asarray(mana_grid)
+    purity = xp.asarray(purity)
+
+    k_mana = xp.asarray(params.K_mana)
+    c_mana_sq = xp.asarray(params.C_mana_sq)
+
+    return k_mana * mana_grid * purity * c_mana_sq
