@@ -10,18 +10,19 @@ def plot_scalar_field(field: np.ndarray, title: str = "Field") -> None:
     Quick 2D visualization for a scalar field.
     """
     be = b_calculus.get_backend()
-    field_np = be.asnumpy(field)
+    # stay on NumPy after conversion so matplotlib never sees backend tensors
+    field_np = np.asarray(be.asnumpy(field))
 
     # normalize strictly in NumPy to avoid torch/cupy objects reaching matplotlib
-    fmin = field_np.min()
-    fmax = field_np.max()
+    fmin = float(np.min(field_np))
+    fmax = float(np.max(field_np))
     denom = fmax - fmin
     if denom == 0:
-        img = np.zeros_like(field_np)
+        img = np.zeros_like(field_np, dtype=float)
     else:
         img = (field_np - fmin) / denom
 
-    plt.imshow(img, origin="lower", interpolation="nearest")
+    plt.imshow(np.asarray(img), origin="lower", interpolation="nearest")
     plt.colorbar(label="normalized value")
     plt.title(title)
     plt.tight_layout()
