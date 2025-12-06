@@ -19,14 +19,23 @@ def mana_entropy(field: np.ndarray, eps: float = 1e-12) -> float:
     float
         Entropy S = -sum p_ij log p_ij  (natural log).
     """
-    total = field.sum()
-    if total <= 0:
+    be = b_calculus.xp
+
+    field_be = be.asarray(field)
+    total = field_be.sum()
+    total_value = float(total.item() if hasattr(total, "item") else total)
+
+    if total_value <= 0:
         return 0.0
 
-    p = field / total
-    p = np.maximum(p, eps)      # avoid log(0)
-    s = -np.sum(p * np.log(p))
-    return float(s)
+    p = field_be / total
+    p = be.maximum(p, be.asarray(eps))  # avoid log(0)
+    s = -(p * be.log(p)).sum()
+
+    if hasattr(be, "asnumpy"):
+        return float(be.asnumpy(s))
+
+    return float(s.item() if hasattr(s, "item") else s)
 
 def detect_ness(series, window: int = 20, rtol: float = 1e-3, atol: float = 1e-6):
     """
