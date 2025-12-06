@@ -15,6 +15,16 @@ class Backend(ABC):
 
     # ---- basic array ops ----
     @abstractmethod
+    def asnumpy(self, x: Any) -> Any:
+        """Convert ``x`` to a NumPy ``ndarray`` on CPU.
+
+        Implementations should accept backend-native arrays/tensors or scalars
+        and return a NumPy array suitable for plotting/logging while preserving
+        values (and dtype when practical). Conversion should detach gradients
+        for autograd-enabled backends.
+        """
+
+    @abstractmethod
     def asarray(self, x: Any) -> Any:
         """Convert ``x`` to a backend-native floating array/tensor.
 

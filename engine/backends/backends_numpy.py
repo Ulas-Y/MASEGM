@@ -9,6 +9,9 @@ class NumpyBackend(Backend):
         self.dtype = dtype
 
     # basic ops
+    def asnumpy(self, x):
+        return np.asarray(x, dtype=self.dtype)
+
     def asarray(self, x):
         return np.asarray(x, dtype=self.dtype)
 
