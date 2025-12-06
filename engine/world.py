@@ -21,7 +21,24 @@ class World:
     interaction_rules: List[InteractionRule] = field(default_factory=list)
 
     def step(self, dt: float) -> None:
-        """Apply all rules once."""
+        """Advance the simulation by one explicit time step.
+
+        The lifecycle is intentionally staged so rule side effects can build on
+        each other in a predictable order:
+
+        1. ``mana_rules`` run first and may mutate ``mana`` in-place.
+        2. ``matter_rules`` run next and may mutate ``matter`` in-place using
+           the already-updated mana state if they read from it internally.
+        3. ``interaction_rules`` run last and may couple ``mana``, ``matter``,
+           and ``energy`` in-place.
+
+        Each ``apply`` call is expected to edit the provided fields directly
+        (no copies) and should avoid resetting shared tensors another rule might
+        rely on later in the step. Rules should be written to compose cleanly
+        under this ordering and to assume that a small ``dt`` is used so the
+        explicit updates remain stable; large ``dt`` values may produce
+        integration artifacts because no internal sub-stepping is performed.
+        """
         for rule in self.mana_rules:
             rule.apply(self.mana, dt)
 
