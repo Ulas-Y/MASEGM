@@ -2,7 +2,7 @@ import numpy as np
 from scipy.signal import convolve2d
 from engine.math.b_calculus import log_gradient, log_laplacian  # you already had log_laplacian
 from engine.math.b_calculus import divergence                  # NEW
-from engine.math.b_calculus import b_add, b_mul  # we’ll use these first
+from engine.math.b_calculus import b_add, b_mult  # we’ll use these first
 
 
 
@@ -105,7 +105,7 @@ class ManaField:
         """
         self.grid = np.maximum(self.grid, eps)
     
-    def b_scale_mul(self, factor: float) -> None:
+    def b_scale_mult(self, factor: float) -> None:
         """
         Apply a multiplicative scaling on the B-scale:
         
@@ -123,4 +123,4 @@ class ManaField:
             mana_new = mana ⊗ exponent = mana^exponent
         """
         self.ensure_positive()
-        self.grid = b_mul(self.grid, exponent)  # which is self.grid ** exponent
+        self.grid = b_mult(self.grid, exponent)  # which is self.grid ** exponent
