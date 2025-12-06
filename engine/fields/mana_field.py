@@ -1,8 +1,14 @@
 import numpy as np
-from scipy.signal import convolve2d
-from engine.math.b_calculus import log_gradient, log_laplacian  # you already had log_laplacian
-from engine.math.b_calculus import divergence                  # NEW
-from engine.math.b_calculus import b_add, b_mul  # we’ll use these first
+
+from engine.math.b_calculus import (
+    b_add,
+    b_mult,
+    divergence,
+    get_backend,
+    laplacian,
+    log_gradient,
+    log_laplacian,
+)
 
 
 
@@ -11,29 +17,34 @@ class ManaField:
     Represents a mana density field on a 2D grid.
     """
     
-    _LAPLACIAN_KERNEL = np.array(
-        [[0.0, 1.0, 0.0],
-         [1.0, -4.0, 1.0],
-         [0.0, 1.0, 0.0]]
-    )
-    
     def __init__(self, shape=(100, 100), initial_value: float = 0.0):
         self.shape = shape
+        backend = get_backend()
         base = max(initial_value, 0.0)
-        self.grid = np.full(shape, base, dtype=float) + 1e-12
-    
+        self.grid = backend.full(shape, base) + backend.asarray(1e-12)
+
         # NEW: phase index per cell (will be managed by phase rules)
         # 0: particles, 1: energy, 2: gas, 3: refined, 4: aether, 5: purinium
-        self.phase = np.zeros(shape, dtype=np.uint8)   
+        phase_dtype = np.uint8
+        if backend.__class__.__name__ == "TorchBackend":
+            import torch
+
+            phase_dtype = torch.uint8
+
+        self.phase = backend.zeros(shape, dtype=phase_dtype)
     
     def add_mana(self, y: int, x: int, amount: float) -> None:
-        self.grid[y, x] += amount
-    
+        backend = get_backend()
+        self.grid[y, x] += backend.asarray(amount)
+
     def remove_mana(self, y: int, x: int, amount: float) -> None:
-        self.grid[y, x] = max(0.0, self.grid[y, x] - amount)
+        backend = get_backend()
+        updated = self.grid[y, x] - backend.asarray(amount)
+        self.grid[y, x] = backend.maximum(updated, backend.asarray(0.0))
     
     def total_mana(self) -> float:
-        return float(self.grid.sum())
+        total = self.grid.sum()
+        return float(total.item() if hasattr(total, "item") else total)
     
     def diffuse(self, rate: float, dt: float) -> None:
         """
@@ -43,8 +54,11 @@ class ManaField:
         This is VERY basic and not numerically perfect,
         but good for prototyping.
         """
-        lap = convolve2d(self.grid, self._LAPLACIAN_KERNEL, mode="same", boundary="symm")
-        self.grid += rate * dt * lap
+        backend = get_backend()
+        lap = laplacian(self.grid, backend=backend)
+        rate_arr = backend.asarray(rate)
+        dt_arr = backend.asarray(dt)
+        self.grid = self.grid + rate_arr * dt_arr * lap
     
     def b_diffuse(self, rate: float, dt: float) -> None:
         """
@@ -55,8 +69,11 @@ class ManaField:
         So in normal space:
             m_new = m * exp(rate * Δ log m * dt)
         """
-        lap_log = log_laplacian(self.grid)
-        self.grid *= np.exp(rate * lap_log * dt)
+        backend = get_backend()
+        lap_log = log_laplacian(self.grid, backend=backend)
+        rate_arr = backend.asarray(rate)
+        dt_arr = backend.asarray(dt)
+        self.grid = self.grid * backend.exp(rate_arr * lap_log * dt_arr)
         self.ensure_positive()
     
     def b_advect(self, strength: float, dt: float) -> None:
@@ -76,26 +93,30 @@ class ManaField:
             return
 
         # Use log-gradient so behaviour is multiplicative-scale aware
-        gy, gx = log_gradient(self.grid)
+        backend = get_backend()
+        gy, gx = log_gradient(self.grid, backend=backend)
 
         # Velocity field (you can flip the sign if you want flows from low→high)
-        vy = -strength * gy
-        vx = -strength * gx
+        strength_arr = backend.asarray(strength)
+        vy = -strength_arr * gy
+        vx = -strength_arr * gx
 
         # Flux = m * v
         Fy = self.grid * vy
         Fx = self.grid * vx
 
         # Divergence of the flux
-        divF = divergence(Fy, Fx)
+        divF = divergence(Fy, Fx, backend=backend)
 
         # Advection update
-        self.grid -= dt * divF
+        dt_arr = backend.asarray(dt)
+        self.grid = self.grid - dt_arr * divF
         self.ensure_positive()
     
     def copy(self) -> "ManaField":
         mf = ManaField(self.shape)
-        mf.grid = self.grid.copy()
+        mf.grid = self.grid.clone() if hasattr(self.grid, "clone") else self.grid.copy()
+        mf.phase = self.phase.clone() if hasattr(self.phase, "clone") else self.phase.copy()
         return mf
     
     def ensure_positive(self, eps: float = 1e-12) -> None:
@@ -103,9 +124,10 @@ class ManaField:
         Ensure that all mana values stay strictly positive
         (needed for B-calculus, which uses ln).
         """
-        self.grid = np.maximum(self.grid, eps)
+        backend = get_backend()
+        self.grid = backend.maximum(self.grid, backend.asarray(eps))
     
-    def b_scale_mul(self, factor: float) -> None:
+    def b_scale_mult(self, factor: float) -> None:
         """
         Apply a multiplicative scaling on the B-scale:
         
@@ -114,7 +136,8 @@ class ManaField:
         Using your B-add definition.
         """
         self.ensure_positive()
-        self.grid = b_add(self.grid, factor)  # which is just self.grid * factor
+        backend = get_backend()
+        self.grid = b_add(self.grid, backend.asarray(factor))  # which is just self.grid * factor
     
     def b_scale_power(self, exponent: float) -> None:
         """
@@ -123,4 +146,5 @@ class ManaField:
             mana_new = mana ⊗ exponent = mana^exponent
         """
         self.ensure_positive()
-        self.grid = b_mul(self.grid, exponent)  # which is self.grid ** exponent
+        backend = get_backend()
+        self.grid = b_mult(self.grid, backend.asarray(exponent))  # which is self.grid ** exponent

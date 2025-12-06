@@ -4,10 +4,11 @@ b_calculus.py
 Full implementation of the B-Scale arithmetic, B-derivative, and B-integral
 based on your formal definitions.
 
-Author: ME (concept) + ChatGPT (implementation)
+Author: ME aka "U" the author, innovator, engineer and scientist (concept) + ChatGPT (implementation)
 """
 
 import numpy as np
+import torch
 
 # ============================================================
 #  B-ARITHMETIC (Fundamental Operations)
@@ -23,14 +24,20 @@ def b_sub(x, y):
     return x / y
 
 
-def b_mul(x, y):
+def b_mult(x, y):
     """B-multiplication: x ⊗ y = x^y"""
     return x ** y
 
 
-def b_div(x, y):
-    """B-division: x ⊘ y = log_y(x)"""
+def b_div(x, y, eps=1e-12):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    x = np.maximum(x, eps)
+    y = np.where((y <= 0) | (np.isclose(y, 1.0)), eps, y)
+
     return np.log(x) / np.log(y)
+
 
 
 # ============================================================
@@ -51,7 +58,7 @@ def b_derivative(f, x, dx=1e-8):
     xm = x - dx
     xm = np.where(xm <= 0, x, xm)  # ensure positive
 
-    g = lambda z: np.log(f(z))
+    g = lambda z: np.log(np.maximum(f(z), 1e-30)) #np.maximum(f(xs), 1e-30)
 
     num = g(xp) - g(xm)
     den = np.log(xp) - np.log(xm)
@@ -69,7 +76,7 @@ def b_integral(f, a, b, n=10000):
 
     Numeric approach:
         I = exp( sum ln(f(x_i)) * d(ln x_i) )
-
+    
     Parameters:
         f : function
         a,b : integration limits (>0)
@@ -77,14 +84,15 @@ def b_integral(f, a, b, n=10000):
     """
     if a <= 0 or b <= 0:
         raise ValueError("B-integral domain requires a>0, b>0.")
-
+    
     xs = np.linspace(a, b, n)
-    lnf = np.log(f(xs))
+    lnf = np.log(np.maximum(f(xs), 1e-30))
+    
     dlnx = np.diff(np.log(xs))  # differences in ln(x)
-
+    
     # midpoint rule: average ln(f) over intervals
     mid = (lnf[1:] + lnf[:-1]) / 2
-
+    
     I = np.exp(np.sum(mid * dlnx))
     return I
 
@@ -93,17 +101,14 @@ def b_integral(f, a, b, n=10000):
 #  OPTIONAL: TORCH VERSION (GPU-READY)
 # ============================================================
 
-def b_derivative_torch(f, x, dx=1e-6):
-    """
-    Same as b_derivative but using torch for GPU acceleration.
-    """
+def b_derivative_torch(f, x, dx=1e-6, eps=1e-30):
     import torch
 
     xp = x + dx
     xm = x - dx
     xm = torch.where(xm <= 0, x, xm)
 
-    g = lambda z: torch.log(f(z))
+    g = lambda z: torch.log(torch.clamp(f(z), min=eps))
 
     num = g(xp) - g(xm)
     den = torch.log(xp) - torch.log(xm)
@@ -111,14 +116,15 @@ def b_derivative_torch(f, x, dx=1e-6):
     return torch.exp(num / den)
 
 
-def b_integral_torch(f, a, b, n=20000):
-    """
-    GPU-accelerated B-integral.
-    """
+def b_integral_torch(f, a, b, n=20000, device=None, dtype=None, eps=1e-30):
     import torch
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    if dtype is None:
+        dtype = torch.float64
 
-    xs = torch.linspace(a, b, n, device="cuda")
-    lnf = torch.log(f(xs))
+    xs = torch.linspace(a, b, n, device=device, dtype=dtype)
+    lnf = torch.log(torch.clamp(f(xs), min=eps))
     lnxs = torch.log(xs)
     dlnx = lnxs[1:] - lnxs[:-1]
 
@@ -207,8 +213,51 @@ def divergence(Fy: np.ndarray, Fx: np.ndarray):
     return dFy_dy + dFx_dx
 
 
+    #torch reworks
+
+def log_gradient_torch(field: torch.Tensor, eps: float = 1e-12):
+    """
+    Torch version of log_gradient.
+    field: 2D tensor (H, W)
+    """
+    f = torch.clamp(field, min=eps)
+    logf = torch.log(f)
+
+    gy = 0.5 * (torch.roll(logf, shifts=-1, dims=0) - torch.roll(logf, shifts=1, dims=0))
+    gx = 0.5 * (torch.roll(logf, shifts=-1, dims=1) - torch.roll(logf, shifts=1, dims=1))
+    return gy, gx
+
+
+def b_gradient_torch(field: torch.Tensor, eps: float = 1e-12):
+    gy, gx = log_gradient_torch(field, eps=eps)
+    return torch.exp(gy), torch.exp(gx)
+
+
+def log_laplacian_torch(field: torch.Tensor, eps: float = 1e-12):
+    f = torch.clamp(field, min=eps)
+    logf = torch.log(f)
+
+    lap = (
+        -4.0 * logf
+        + torch.roll(logf, 1, 0)
+        + torch.roll(logf, -1, 0)
+        + torch.roll(logf, 1, 1)
+        + torch.roll(logf, -1, 1)
+    )
+    return lap
+
+
+def b_laplacian_torch(field: torch.Tensor, eps: float = 1e-12):
+    lap_log = log_laplacian_torch(field, eps=eps)
+    return torch.exp(lap_log)
+
+
+def divergence_torch(Fy: torch.Tensor, Fx: torch.Tensor):
+    dFy_dy = 0.5 * (torch.roll(Fy, -1, 0) - torch.roll(Fy, 1, 0))
+    dFx_dx = 0.5 * (torch.roll(Fx, -1, 1) - torch.roll(Fx, 1, 1))
+    return dFy_dy + dFx_dx
+
 __all__ = [
-    # your existing stuff...
     "b_add",
     "b_sub",
     "b_mult",
@@ -222,5 +271,12 @@ __all__ = [
     "b_gradient",
     "log_laplacian",
     "b_laplacian",
+    "log_gradient_torch",
+    "b_gradient_torch",
+    "log_laplacian_torch",
+    "b_laplacian_torch",
+    "divergence_torch",
+    "b_laplacian",
+    "divergence",
+    "log_gradient_torch",
 ]
-

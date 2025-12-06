@@ -1,4 +1,4 @@
-import numpy as np
+from engine.math.b_calculus import xp
 
 
 class MatterField:
@@ -9,14 +9,16 @@ class MatterField:
 
     def __init__(self, shape=(100, 100), initial_value: float = 0.0):
         self.shape = shape
-        self.grid = np.full(shape, initial_value, dtype=float)
+        self.grid = xp.full(shape, initial_value)
 
     def total_matter(self) -> float:
         return float(self.grid.sum())
 
     def add_matter(self, amount: float) -> None:
-        self.grid += amount
+        amount_arr = xp.asarray(amount)
+        self.grid = self.grid + amount_arr
 
     def remove_matter(self, amount: float) -> None:
-        self.grid -= amount
-        self.grid = np.maximum(self.grid, 0.0)
+        amount_arr = xp.asarray(amount)
+        updated = self.grid - amount_arr
+        self.grid = xp.maximum(updated, 0.0)

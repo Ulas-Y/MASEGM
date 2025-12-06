@@ -44,4 +44,4 @@ class BScaleManaGrowth(ManaRule):
     def apply(self, mana: ManaField, dt: float) -> None:
         # growth factor per time step:
         factor = float(np.exp(self.k * dt))
-        mana.b_scale_mul(factor)
+        mana.b_scale_mult(factor)

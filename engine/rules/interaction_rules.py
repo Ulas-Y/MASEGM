@@ -1,8 +1,8 @@
-import numpy as np
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
-from engine.math.b_calculus import log_laplacian
+from engine.constants import C_MANA, K_MANA
+from engine.math.b_calculus import log_laplacian, xp
 
 
 
@@ -29,19 +29,21 @@ class ManaCondensesToMatter(InteractionRule):
         self._S_max = max(S_max, 1e-12)
 
     def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
-        field = mana.grid
+        be = xp
+        mana_grid = be.asarray(mana.grid)
+        matter_grid = be.asarray(matter.grid)
 
-        rate = self.base_rate
+        rate = be.asarray(self.base_rate)
         if self._last_entropy is not None:
             frac = self._last_entropy / self._S_max  # 0..1
             # low entropy -> bigger factor; high entropy -> closer to 1
-            factor = np.exp(self.entropy_sensitivity * (1.0 - frac))
-            rate = self.base_rate * factor
+            factor = be.exp(be.asarray(self.entropy_sensitivity * (1.0 - frac)))
+            rate = rate * factor
 
-        delta = rate * field * dt
+        delta = rate * mana_grid * be.asarray(dt)
 
-        mana.grid -= delta
-        matter.grid += delta
+        mana.grid = mana_grid - delta
+        matter.grid = matter_grid + delta
 
 class EnergyCoupledBGrowth(InteractionRule):
     """
@@ -58,8 +60,9 @@ class EnergyCoupledBGrowth(InteractionRule):
         self.alpha = alpha
 
     def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
-        E = energy.grid
-        M = mana.grid
+        be = xp
+        E = be.asarray(energy.grid)
+        M = be.asarray(mana.grid)
 
         # shift to non-negative, normalize
         E_shift = E - E.min()
@@ -68,8 +71,8 @@ class EnergyCoupledBGrowth(InteractionRule):
             return
 
         E_norm = E_shift / maxE  # 0..1
-        factor = np.exp(self.alpha * E_norm * dt)
-        M *= factor
+        factor = be.exp(self.alpha * E_norm * dt)
+        mana.grid = M * factor
         mana.ensure_positive()
 
 class ManaEnergyBackReaction(InteractionRule):
@@ -87,14 +90,15 @@ class ManaEnergyBackReaction(InteractionRule):
         self.decay = decay
 
     def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
-        m = mana.grid
-        e = energy.grid
+        be = xp
+        m = be.asarray(mana.grid)
+        e = be.asarray(energy.grid)
 
-        lap_log_m = log_laplacian(m)
-        source = self.gamma * np.abs(lap_log_m)
+        lap_log_m = be.asarray(log_laplacian(m))
+        source = self.gamma * abs(lap_log_m)
 
         # reaction + decay
-        e += (source - self.decay * e) * dt
+        energy.grid = e + (source - self.decay * e) * dt
         energy.ensure_nonnegative()
 
 class EnergyToManaCondensation(InteractionRule):
@@ -102,19 +106,22 @@ class EnergyToManaCondensation(InteractionRule):
         self.rate = rate
 
     def apply(self, mana, matter, energy, dt: float) -> None:
-        e = energy.grid
-        m = mana.grid
+        be = xp
+        e = be.asarray(energy.grid)
+        m = be.asarray(mana.grid)
 
         # where purity is already high, energy more easily forms mana
         purity = getattr(mana, "purity", None)
         if purity is None:
             # fallback: assume moderate purity everywhere
-            purity = np.full_like(m, 0.5)
+            purity = be.asarray(m * 0 + 0.5)
+        else:
+            purity = be.asarray(purity)
 
         # conversion is stronger at high purity
         conv = self.rate * purity * e * dt
 
-        energy.grid -= conv
-        mana.grid   += conv / (K_MANA * (C_MANA ** 2))  # invert your formula
+        energy.grid = e - conv
+        mana.grid   = m + conv / (K_MANA * (C_MANA ** 2))  # invert your formula
 
 

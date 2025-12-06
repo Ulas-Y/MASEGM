@@ -1,6 +1,5 @@
-import numpy as np
 from engine.fields.mana_field import ManaField
-from engine.math.b_calculus import b_add  # using for scaling
+from engine.math.b_calculus import xp  # using for scaling
 
 
 
@@ -43,5 +42,5 @@ class BScaleManaGrowth(ManaRule):
 
     def apply(self, mana: ManaField, dt: float) -> None:
         # growth factor per time step:
-        factor = float(np.exp(self.k * dt))
-        mana.b_scale_mul(factor)
+        factor = xp.exp(xp.asarray(self.k * dt))
+        mana.b_scale_mult(factor)
