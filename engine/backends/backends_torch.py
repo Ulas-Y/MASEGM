@@ -17,6 +17,9 @@ class TorchBackend(Backend):
     def asarray(self, x):
         return torch.as_tensor(x, device=self.device, dtype=self.dtype)
 
+    def full(self, shape, fill_value):
+        return torch.full(shape, fill_value, device=self.device, dtype=self.dtype)
+
     def log(self, x):
         return torch.log(x)
 

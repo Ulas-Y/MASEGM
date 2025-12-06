@@ -30,6 +30,14 @@ class Backend(ABC):
         """
 
     @abstractmethod
+    def full(self, shape: Any, fill_value: float) -> Any:
+        """Create a backend-native array/tensor filled with ``fill_value``.
+
+        Implementations should mirror ``numpy.full`` semantics while preserving
+        the backend's preferred dtype and device placement.
+        """
+
+    @abstractmethod
     def log(self, x: Any) -> Any:
         """Compute the natural logarithm elementwise.
 

@@ -12,6 +12,9 @@ class NumpyBackend(Backend):
     def asarray(self, x):
         return np.asarray(x, dtype=self.dtype)
 
+    def full(self, shape, fill_value):
+        return np.full(shape, fill_value, dtype=self.dtype)
+
     def log(self, x):
         return np.log(x)
 
