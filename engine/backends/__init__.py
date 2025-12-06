@@ -1,20 +1,32 @@
 # engine/backends/__init__.py
+from importlib import import_module
 
-from .backend_numpy import NumpyBackend
+def select_backend():
+    """
+    Returns a tuple of (backend_name, backend_module).
 
-try:
-    from .backend_torch import TorchBackend
-except ImportError:
-    TorchBackend = None
+    Logic:
+    1) Try to import torch.
+    2) If torch imports and `torch.cuda.is_available()` is True, pick torch.
+    3) Otherwise, fall back to NumPy.
 
+    Notes:
+    - Uses lazy import to avoid hard dependency on torch.
+    - Keeps the API surface small: caller gets the module to use directly.
+    """
+    torch = None
+    try:
+        torch = import_module("torch")
+    except Exception:
+        torch = None
 
-def get_backend(name="numpy", **kwargs):
-    name = name.lower()
-    if name == "numpy":
-        return NumpyBackend(**kwargs)
-    elif name == "torch":
-        if TorchBackend is None:
-            raise RuntimeError("Torch backend requested but torch is not installed.")
-        return TorchBackend(**kwargs)
-    else:
-        raise ValueError(f"Unknown backend: {name}")
+    if torch is not None:
+        try:
+            if torch.cuda.is_available():
+                return "torch", torch
+        except Exception:
+            # If CUDA check fails (rare), still allow CPU torch rather than crash
+            return "torch", torch
+
+    import numpy as np  # NumPy is assumed to be available
+    return "numpy", np
