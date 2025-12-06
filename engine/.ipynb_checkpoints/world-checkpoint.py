@@ -7,8 +7,10 @@ from engine.rules.matter_rules import MatterRule
 from engine.fields.mana_field import ManaField
 from engine.fields.matter_field import MatterField
 from engine.fields.energy_tensor import EnergyTensor
-
-
+from engine.rules.metaphysics import MetaphysicsRule
+# Add to imports: from engine.rules.metaphysics import MetaphysicsRule
+# In World dataclass: metaphysics_rules: List[MetaphysicsRule] = field(default_factory=list)
+# In step(): for rule in self.metaphysics_rules: rule.apply(self.mana, dt)  # After physics_rules if keeping separate
 
 @dataclass
 class World:
@@ -20,7 +22,8 @@ class World:
     matter_rules: List[MatterRule] = field(default_factory=list)
     interaction_rules: List[InteractionRule] = field(default_factory=list)
     physics_rules: List[PhysicsRule] = field(default_factory=list)
-
+    metaphysics_rules: List[MetaphysicsRule] = field(default_factory=list)
+    
     def step(self, dt: float) -> None:
         """Apply all rules once."""
         for rule in self.mana_rules:
@@ -34,3 +37,6 @@ class World:
             
         for rule in self.physics_rules:  # New: Physics after interactions
             rule.apply(self.mana, dt)  # Apply to mana for now
+            
+        for rule in self.metaphysics_rules: 
+            rule.apply(self.mana, dt)

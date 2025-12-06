@@ -18,6 +18,6 @@ class GravityAttraction(PhysicsRule):
         force_y = -self.G * grad_y  # Toward higher density
         force_x = -self.G * grad_x
         # Advect mana along force (simple Euler step)
-        mana.advect(force_y, force_x, dt)  # Use your existing advect method
+        mana.b_advect(force_y, force_x, dt)  # Use your existing advect method
 
 # Add more, e.g., VelocityFieldRule for momentum if needed

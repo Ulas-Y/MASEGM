@@ -6,6 +6,7 @@ from engine.math.b_calculus import log_laplacian
 
 
 
+
 class InteractionRule:
     def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
         raise NotImplementedError
@@ -80,7 +81,10 @@ class ManaEnergyBackReaction(InteractionRule):
 
     - Sharp mana features (large |Δ ln m|) generate energy.
     - Energy decays elsewhere at rate 'decay'.
+
     """
+    # In apply():
+    # Existing source/decay...
 
     def __init__(self, gamma: float = 1.0, decay: float = 0.5):
         self.gamma = gamma
@@ -94,8 +98,9 @@ class ManaEnergyBackReaction(InteractionRule):
         source = self.gamma * np.abs(lap_log_m)
 
         # reaction + decay
-        e += (source - self.decay * e) * dt
-        energy.ensure_nonnegative()
+            e += (source - self.decay * e) * dt
+            energy.b_diffuse(0.3, dt)  # Diffuse post-update
+            energy.b_advect(0.1, dt)  # Optional: Advect energy toward its own highs (self-gravity)
 
 class EnergyToManaCondensation(InteractionRule):
     def __init__(self, rate: float = 0.01):

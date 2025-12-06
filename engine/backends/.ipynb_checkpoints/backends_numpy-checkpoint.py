@@ -31,7 +31,7 @@ class NumpyBackend(Backend):
     def b_sub(self, x, y):
         return x / y
 
-    def b_mul(self, x, y):
+    def b_mult(self, x, y):
         return x ** y
 
     def b_div(self, x, y, eps=1e-30):

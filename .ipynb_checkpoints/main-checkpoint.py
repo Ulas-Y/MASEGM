@@ -16,6 +16,10 @@ from engine.constants import C_MANA, K_MANA
 from engine.rules.phase_rules import PhaseTransitionRule
 from engine.physics.mana_phase import PhaseThresholds
 from engine.real_physics.physics import GravityAttraction
+from engine.rules.metaphysics import GravityAttraction
+
+
+# After step loop or in rules: Use mana_energy_from_state to init/update energy.grid periodically
 
 def main(growth_k: float = 0.5, steps: int | None = None):
     cfg = EngineConfig(ny=100, nx=100, dt=0.1, steps=100)
@@ -68,6 +72,7 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     alpha = 1.0                #default 1.0
     energy_diffusion = 0.3     #default 0.3
     transport_strength = 0.3   #default 0.3 "tweak this"
+    gravity = GravityAttraction(G=0.05)   # Tune G low to avoid instability
     
     total_history = []
     entropy_history = []
@@ -93,9 +98,8 @@ def main(growth_k: float = 0.5, steps: int | None = None):
         world.mana.b_advect(transport_strength, cfg.dt)
         
         total_history.append(world.mana.total_mana())
-        
-        gravity = GravityAttraction(G=0.05)  # Low to start
-        world.physics_rules.append(gravity)
+
+        world.metaphysics_rules.append(gravity)  # Or physics_rules if not renaming
         
     
     total = total_history[-1]
