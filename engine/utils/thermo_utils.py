@@ -1,5 +1,7 @@
 import numpy as np
 
+from engine.math import b_calculus
+
 
 def mana_entropy(field: np.ndarray, eps: float = 1e-12) -> float:
     """
@@ -59,12 +61,20 @@ def phase_histogram(phase: np.ndarray) -> dict:
     Count how many cells are in each phase code 0..5.
     Returns a dict {name: count}.
     """
+    be = b_calculus.xp
+    phase_be = be.asarray(phase)
+
+    total = phase_be.numel() if hasattr(phase_be, "numel") else phase_be.size
+
     counts = {}
-    total = phase.size
     for code, name in enumerate(PHASE_NAMES):
-        n = int((phase == code).sum())
-        counts[name] = n
-    counts["total_cells"] = int(total)
+        mask = phase_be == be.asarray(code)
+        n = mask.sum()
+        if hasattr(n, "item"):
+            n = n.item()
+        counts[name] = int(n)
+
+    counts["total_cells"] = int(total.item() if hasattr(total, "item") else total)
     return counts
 
 
