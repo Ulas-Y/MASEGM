@@ -22,7 +22,7 @@ def plot_scalar_field(field: np.ndarray, title: str = "Field") -> None:
     else:
         img = (field_np - fmin) / denom
 
-    plt.imshow(np.asarray(img), origin="lower", interpolation="nearest")
+    plt.imshow(img, origin="lower", interpolation="nearest")
     plt.colorbar(label="normalized value")
     plt.title(title)
     plt.tight_layout()
@@ -50,7 +50,7 @@ def plot_phase_map(phase: np.ndarray, title: str = "Mana phases") -> None:
     norm = BoundaryNorm(bounds, cmap.N)
 
     be = b_calculus.get_backend()
-    phase_np = be.asnumpy(phase)
+    phase_np = np.asarray(be.asnumpy(phase))
 
     fig, ax = plt.subplots(figsize=(5, 5))
     im = ax.imshow(phase_np, origin="lower", cmap=cmap, norm=norm)
@@ -79,7 +79,7 @@ def plot_purity_field(purity: np.ndarray, title: str = "Mana purity") -> None:
     Continuous purity heatmap (0..1).
     """
     be = b_calculus.get_backend()
-    purity_np = be.asnumpy(purity)
+    purity_np = np.asarray(be.asnumpy(purity))
 
     fig, ax = plt.subplots(figsize=(5, 5))
     im = ax.imshow(purity_np, origin="lower", vmin=0.0, vmax=1.0)
