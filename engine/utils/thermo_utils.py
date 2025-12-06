@@ -58,18 +58,3 @@ def detect_ness(series, window: int = 20, rtol: float = 1e-3, atol: float = 1e-6
 
     is_ness = span <= max(rtol * scale, atol)
     return is_ness, span, mean
-
-# engine/utils/thermo_utils.py  (or diagnostics.py)
-
-
-PHASE_NAMES = ("particles", "plasma", "gas", "liquid", "aether", "purinium")
-
-
-from engine.constants import K_MANA, C_MANA
-
-def mana_energy_from_state(mana_grid: np.ndarray,
-                           purity: np.ndarray) -> np.ndarray:
-    """
-    Compute mana energy density E_cell = K_MANA * mana * purity * C_MANA^2
-    """
-    return K_MANA * mana_grid * purity * (C_MANA ** 2)
