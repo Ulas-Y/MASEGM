@@ -153,11 +153,13 @@ class PhaseTransitionRule(InteractionRule):
             if not has_mask:
                 continue
 
-            local = props.entropy_feedback * delta_p[mask]
+            local_delta = delta_p[mask]
+            local = props.entropy_feedback * local_delta
 
             # extra boost for high-purity phases to self-purify
             if props.purify_boost != 0.0:
-                local += props.purify_boost * xp.maximum(delta_p[mask], 0.0)
+                zero = xp.zeros_like(local_delta)
+                local += props.purify_boost * xp.maximum(local_delta, zero)
 
             # plus any unconditional mana decay (e.g. particles, plasma)
             if props.mana_decay != 0.0:
