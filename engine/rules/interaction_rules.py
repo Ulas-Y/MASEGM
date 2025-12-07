@@ -56,8 +56,8 @@ class EnergyCoupledBGrowth(InteractionRule):
     cold zones barely grow.
     """
 
-    def __init__(self, alpha: float = 1.0):
-        self.alpha = alpha
+    def __init__(self, energy_alpha: float = 1.0):
+        self.alpha = energy_alpha
 
     def apply(self, mana: ManaField, matter: MatterField, energy: EnergyTensor, dt: float) -> None:
         be = xp
