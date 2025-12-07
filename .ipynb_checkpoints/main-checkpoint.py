@@ -19,12 +19,17 @@ from engine.constants import (
     energy_diffusion, 
     transport_strength,
     alpha as default_alpha,
+    ny as default_ny,
+    nx as default_nx,
+    dt as default_dt,
+    steps as default_steps,
+    energy_alpha,
 )
 from engine.rules.phase_rules import PhaseTransitionRule
 from engine.metaphysics.mana_phase import PhaseThresholds
 
 def main(growth_k: float = 0.5, steps: int | None = None):
-    cfg = EngineConfig(ny=256, nx=256, dt=0.1, steps=100)
+    cfg = EngineConfig(ny=default_ny, nx=default_nx, dt=default_dt, steps=default_steps)
     n_cells = cfg.nx * cfg.ny
     S_max = np.log(n_cells)
     
@@ -62,7 +67,7 @@ def main(growth_k: float = 0.5, steps: int | None = None):
     # remove the second PhaseTransitionRule(...) block entirely
 
     
-    energy_growth = EnergyCoupledBGrowth(alpha=1.5)
+    energy_growth = EnergyCoupledBGrowth(energy_alpha=1.5)
     world.interaction_rules.append(energy_growth)
     
     # NEW: energy back-reaction from mana curvature
