@@ -7,7 +7,15 @@ from enum import IntEnum
 from typing import Any, Tuple
 
 from engine.math import b_calculus
-
+from ..constants import (
+    p_particle as default_p_particle,      # < 0.1%
+    p_plasma as default_p_plasma,      # 0.1%–5%
+    p_gas as default_p_gas,      # 5%–50%
+    p_liquid as default_p_liquid,      # 50%–95%
+    p_aether as default_p_aether,     # 95%–99.9%
+    p_pivot as default_p_pivot,
+    purinium_density_threshold as default_purinium_density_threshold,
+)
 
 class PhaseCode(IntEnum):
     """
@@ -61,18 +69,18 @@ class PhaseThresholds:
     'aether' vs 'purinium'.
     """
     # purity thresholds (fractions of 1.0)
-    p_particle: float = 1e-3      # < 0.1%
-    p_plasma: float   = 0.05      # 0.1%–5%
-    p_gas: float      = 0.50      # 5%–50%
-    p_liquid: float   = 0.95      # 50%–95%
-    p_aether: float   = 0.999     # 95%–99.9%
+    p_particle: float = default_p_particle      # < 0.1%
+    p_plasma: float   = default_p_plasma      # 0.1%–5%
+    p_gas: float      = default_p_gas      # 5%–50%
+    p_liquid: float   = default_p_liquid      # 50%–95%
+    p_aether: float   = default_p_aether     # 95%–99.9%
 
     # pivot where feedback flips sign
-    p_pivot: float = 0.90
+    p_pivot: float = default_p_pivot
 
     # how many times above the mean mana density a region must be
     # to be considered Purinium (instead of just very dense Aether)
-    purinium_density_threshold: float = 5.0
+    purinium_density_threshold: float = default_purinium_density_threshold
 
 
 def classify_phases(

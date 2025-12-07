@@ -4,10 +4,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum
 
-from typing import Tuple
+from typing import Any, Tuple
 
-import numpy as np
-
+from engine.math import b_calculus
+from ..constants import (
+    p_particle as default_p_particle,      # < 0.1%
+    p_plasma as default_p_plasma,      # 0.1%–5%
+    p_gas as default_p_gas,      # 5%–50%
+    p_liquid as default_p_liquid,      # 50%–95%
+    p_aether as default_p_aether,     # 95%–99.9%
+    p_pivot as default_p_pivot,
+    purinium_density_threshold as default_purinium_density_threshold,
+)
 
 class PhaseCode(IntEnum):
     """
@@ -61,58 +69,70 @@ class PhaseThresholds:
     'aether' vs 'purinium'.
     """
     # purity thresholds (fractions of 1.0)
-    p_particle: float = 1e-3      # < 0.1%
-    p_plasma: float   = 0.05      # 0.1%–5%
-    p_gas: float      = 0.50      # 5%–50%
-    p_liquid: float   = 0.95      # 50%–95%
-    p_aether: float   = 0.999     # 95%–99.9%
+    p_particle: float = default_p_particle      # < 0.1%
+    p_plasma: float   = default_p_plasma      # 0.1%–5%
+    p_gas: float      = default_p_gas      # 5%–50%
+    p_liquid: float   = default_p_liquid      # 50%–95%
+    p_aether: float   = default_p_aether     # 95%–99.9%
 
     # pivot where feedback flips sign
-    p_pivot: float = 0.90
+    p_pivot: float = default_p_pivot
 
     # how many times above the mean mana density a region must be
     # to be considered Purinium (instead of just very dense Aether)
-    purinium_density_threshold: float = 5.0
+    purinium_density_threshold: float = default_purinium_density_threshold
 
 
 def classify_phases(
-    purity: np.ndarray,
-    mana_grid: np.ndarray,
+    purity,
+    mana_grid,
     thresholds: PhaseThresholds,
-) -> np.ndarray:
+) -> Any:
     """
     Classify phases based on purity and relative mana density.
 
-    Returns an integer numpy array of PhaseCode values.
+    Returns an integer array of PhaseCode values using the active backend.
     """
-    phase = np.zeros_like(purity, dtype=np.int8)
+
+    be = b_calculus.xp
+    purity_be = be.asarray(purity)
+    mana_be = be.asarray(mana_grid)
+
+    phase = be.full(purity_be.shape, PhaseCode.PARTICLES)
 
     # 0: particles
-    mask = purity < thresholds.p_particle
+    mask = purity_be < thresholds.p_particle
     phase[mask] = PhaseCode.PARTICLES
 
     # 1: plasma
-    mask = (purity >= thresholds.p_particle) & (purity < thresholds.p_plasma)
+    mask = (purity_be >= thresholds.p_particle) & (
+        purity_be < thresholds.p_plasma
+    )
     phase[mask] = PhaseCode.PLASMA
 
     # 2: gas
-    mask = (purity >= thresholds.p_plasma) & (purity < thresholds.p_gas)
+    mask = (purity_be >= thresholds.p_plasma) & (purity_be < thresholds.p_gas)
     phase[mask] = PhaseCode.GAS
 
     # 3: liquid (refined mana)
-    mask = (purity >= thresholds.p_gas) & (purity < thresholds.p_liquid)
+    mask = (purity_be >= thresholds.p_gas) & (purity_be < thresholds.p_liquid)
     phase[mask] = PhaseCode.LIQUID
 
     # 4: Aether by default for very high purity
-    mask_high = (purity >= thresholds.p_liquid)
+    mask_high = purity_be >= thresholds.p_liquid
     phase[mask_high] = PhaseCode.AETHER
 
     # 5: Purinium = Aether + very high local density
-    if np.any(mask_high):
-        mean_mana = float(mana_grid.mean())
-        if mean_mana > 0.0:
-            dense = mana_grid > (
-                thresholds.purinium_density_threshold * mean_mana
+    has_high = mask_high.any()
+    if hasattr(has_high, "item"):
+        has_high = has_high.item()
+    if bool(has_high):
+        mean_mana = mana_be.mean()
+        mean_mana_val = float(mean_mana.item() if hasattr(mean_mana, "item") else mean_mana)
+        if mean_mana_val > 0.0:
+            mean_mana_be = be.asarray(mean_mana_val)
+            dense = mana_be > (
+                be.asarray(thresholds.purinium_density_threshold) * mean_mana_be
             )
             purinium_mask = mask_high & dense
             phase[purinium_mask] = PhaseCode.PURINIUM
