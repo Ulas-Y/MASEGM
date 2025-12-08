@@ -15,8 +15,8 @@ transport_strength = 0.3   #default 0.3 , makes mana fluxes strength different l
 """
 Basic config container. Expand as needed.
 """
-ny: int = 100  #grid size in y axis
-nx: int = 100  #grid size in x axis
+ny: int = 1024  #grid size in y axis
+nx: int = 1024  #grid size in x axis
 dt: float = 0.1  #the dt for engine/config
 steps: int = 100  #steps amount for engine/config
 
