@@ -9,14 +9,22 @@ base_diffusion = 0.5       #default 0.5 , makes diffusion speed or force stronge
 alpha = 1.0                #default 1.0 , makes 
 energy_diffusion = 0.3     #default 0.3 , makes energy diffusion stronger or weaker
 transport_strength = 0.3   #default 0.3 , makes mana fluxes strength different like strong or weak "tweak these"
-#diffusion_rate = base_diffusion * (1.0 + alpha * (1.0 - frac))
+#diffusion_rate = base_diffusion * (1.0 + alpha * (1.0 - frac)) 
+
+#below is copied from testing code
+
+k_strenght = 0.0 #multiplicative growth rate
+step_height = 100 #difference between steps of graphs
+starter_step = 1 #starting simulation step of 1st graph
+steps_amount = 5 #how many graphs and 'graph steps' is going to be there
+
 #below is copy pasted from config.py
 
 """
 Basic config container. Expand as needed.
 """
-ny: int = 1024  #grid size in y axis
-nx: int = 1024  #grid size in x axis
+ny: int = 128  #grid size in y axis
+nx: int = 128  #grid size in x axis
 dt: float = 0.1  #the dt for engine/config
 steps: int = 100  #steps amount for engine/config
 

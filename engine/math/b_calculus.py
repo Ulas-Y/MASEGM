@@ -98,6 +98,7 @@ def b_mult(x, y, backend=None):
 
 
 def b_div(x, y, eps=1e-12, backend=None):
+    """B-division: x [unkown symbol?] y = log_{y}(x) """
     be = _backend(backend)
     return be.b_div(_as_backend_array(x, be), _as_backend_array(y, be), eps=eps)
 
