@@ -7,3 +7,5 @@ seaborn
 networkx
 pandas
 mpmath
+jupyterlab
+importlib
