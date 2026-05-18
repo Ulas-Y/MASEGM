@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from engine.math.b_calculus import xp
-
+from engine.constants import C_MANA as default_C_mana, K_MANA as default_K_mana, eps as default_eps
 
 @dataclass
 class ManaEnergyParams:
@@ -22,9 +22,9 @@ class ManaEnergyParams:
 
     Keep these at 1.0 until you want to play with the actual numbers.
     """
-    K_mana: float = 1.0       # conversion factor (mass -> energy)
-    C_mana: float = 1.0       # max propagation speed in "mana-units"
-    eps: float = 1e-12        # numerical floor
+    K_mana: float = default_K_mana               #float = 1.0       # conversion factor (mass -> energy)
+    C_mana: float = default_C_mana               #float = 1.0       # max propagation speed in "mana-units"
+    eps: float = default_eps                     #float = 1e-12     # numerical floor
 
     @property
     def C_mana_sq(self) -> float:
@@ -34,7 +34,7 @@ class ManaEnergyParams:
 def mana_purity(
     mana_grid: Any,
     matter_grid: Any,
-    eps: float = 1e-12,
+    eps: float = default_eps,
 ) -> Any:
     """
     Compute local purity:
@@ -55,8 +55,13 @@ def mana_purity(
 def mana_energy_density(
     mana_grid: Any,
     purity: Any,
+    phase: Any,
     params: ManaEnergyParams,
 ) -> Any:
+    """
+    Phase-aware mana energy density.
+    High phases (especially Purinium) get massive energy density.
+    """
     """
     Local mana energy density:
 
@@ -67,8 +72,15 @@ def mana_energy_density(
     """
     mana_grid = xp.asarray(mana_grid)
     purity = xp.asarray(purity)
+    phase = xp.asarray(phase)
 
     k_mana = xp.asarray(params.K_mana)
     c_mana_sq = xp.asarray(params.C_mana_sq)
 
-    return k_mana * mana_grid * purity * c_mana_sq
+    base_energy = k * mana_grid * purity * c2
+    
+    # Apply phase multiplier
+    mult = xp.asarray([PHASE_ENERGY_MULT.get(int(p), 1.0) for p in phase.flat])
+    mult = mult.reshape(phase.shape)
+    
+    return base_energy * mult

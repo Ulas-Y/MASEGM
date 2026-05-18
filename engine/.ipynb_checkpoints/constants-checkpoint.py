@@ -2,7 +2,7 @@
 
 K_MANA = 1.0      # unit mass / conversion constant and default is 1.0
 C_MANA = 1.0e3    # "speed of light" for mana in sim units and default was 1.0e2
-
+eps: float = 1e-12
 #below is copy pasted from main.py
 
 base_diffusion = 0.5       #default 0.5 , makes diffusion speed or force stronger
@@ -34,11 +34,11 @@ energy_alpha = 1.5 #default is 1.5 and this changes energy fluctuations for ener
 #below is from metaphysics/mana_phase.py from phase_thresholds
 
     # purity thresholds (fractions of 1.0)
-p_particle: float = 1e-3      # < 0.1%
-p_plasma: float   = 0.05      # 0.1%–5%
-p_gas: float      = 0.50      # 5%–50%
-p_liquid: float   = 0.95      # 50%–95%
-p_aether: float   = 0.999     # 95%–99.9%
+p_particle: float = 1e-4      # < 0.1%
+p_plasma: float   = 0.01      # 0.1%–5%
+p_gas: float      = 0.30      # 5%–50%
+p_liquid: float   = 0.85      # 50%–95%
+p_aether: float   = 0.985     # 95%–99.9%
 
 """
 pivot where feedback of entropy 
@@ -47,11 +47,11 @@ generating entropy to increase mana
 instead of lessening entropy at cost of mana
 """
 
-p_pivot: float = 0.90
+p_pivot: float = 0.92
 
     # how many times above the mean mana density a region must be
     # to be considered Purinium (instead of just very dense Aether)
-purinium_density_threshold: float = 5.0
+purinium_density_threshold: float = 8.0
 
 #below is from metaphysics/mana_phase.py from Phase Properties as just understanding how to modify some other things
 
@@ -119,3 +119,19 @@ purinium_density_threshold: float = 5.0
 #            purify_boost=1.0,
 #        ),
 #    )
+
+
+# === NEW PHASE ENERGY SCALING (in constants.py) ===
+# These multiply into your E_cell formula or can be used as phase_energy_multiplier
+
+PHASE_ENERGY = {
+    "particles": 1.0,        # wave-like, almost negligible
+    "plasma":  10.0,         # plasma / magic energy
+    "gas":     100.0,        # normal mana (gas-like)
+    "liquid":  1_000.0,      # refined / liquid-like
+    "aether":  100_000.0,    # solid-like dense
+    "purinium": 10_000_000.0 # white dwarf / neutron star / black-hole tier
+}
+
+# Optional: extreme density feel for purinium
+PURINIUM_ENERGY_DENSITY = 1e12   # feel free to go even higher (1e15+)

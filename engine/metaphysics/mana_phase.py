@@ -177,18 +177,18 @@ def default_phase_properties() -> Tuple[PhaseProperties, ...]:
         ),
         PhaseProperties(
             name="aether",
-            entropy_feedback=+0.40,
+            entropy_feedback=+0.28,
             mana_decay=0.0,
-            matter_to_mana=0.05,
+            matter_to_mana=0.03,
             mana_to_energy=0.0,
-            purify_boost=0.2,
+            purify_boost=0.12,
         ),
         PhaseProperties(
             name="purinium",
-            entropy_feedback=+1.0,
+            entropy_feedback=+0.99,
             mana_decay=0.0,
-            matter_to_mana=0.8,   # aggressive matter annihilation
+            matter_to_mana=0.75,   # aggressive matter annihilation
             mana_to_energy=0.0,
-            purify_boost=1.0,
+            purify_boost=0.95,
         ),
     )
